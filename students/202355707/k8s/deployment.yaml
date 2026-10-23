@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arm-lab-202355707
+  labels:
+    app: arm-lab-202355707
+    app.kubernetes.io/name: arm-lab
+    app.kubernetes.io/instance: arm-lab-202355707
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: robot-arm-twin
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  # 새 Pod가 준비된 뒤 기존 Pod를 교체합니다. 교체 중에는 최대 2개가 실행됩니다.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  minReadySeconds: 3
+  selector:
+    matchLabels:
+      app: arm-lab-202355707
+  template:
+    metadata:
+      # tools/sync-configmap.py가 갱신합니다. 설정 변경을 Pod 교체와 연결합니다.
+      annotations:
+        checksum/content: "b85151291f854a28fb8181b343ffbfa2ccfda371cfb4dfef28a7d1506aa2ec54"
+        checksum/model: "92d0ad59014be0a4596d6c00d172444f3dbcd581ce45a86a976ec87d8e49b258"
+      labels:
+        app: arm-lab-202355707
+        app.kubernetes.io/name: arm-lab
+        app.kubernetes.io/instance: arm-lab-202355707
+        app.kubernetes.io/component: web
+        app.kubernetes.io/part-of: robot-arm-twin
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: web
+          # 태그가 갱신되어도 동일한 이미지가 배포되도록 multi-arch digest 고정.
+          image: registry.access.redhat.com/ubi9/nginx-124:1@sha256:f414eb6c23a501c921542b75e30032979640682d8eaa37b500d7d34f4048e5ec
+          imagePullPolicy: IfNotPresent
+          command: ["nginx"]
+          args: ["-c", "/etc/arm-lab/nginx.conf", "-g", "daemon off;"]
+          ports:
+            - name: http
+              containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 2
+            timeoutSeconds: 2
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /index.html
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          volumeMounts:
+            - name: web-files
+              mountPath: /opt/app-root/src
+              readOnly: true
+            - name: nginx-config
+              mountPath: /etc/arm-lab
+              readOnly: true
+            - name: runtime
+              mountPath: /tmp
+      volumes:
+        - name: web-files
+          projected:
+            sources:
+              - configMap:
+                  name: arm-lab-202355707-content
+                  items:
+                    - key: index.html
+                      path: index.html
+                    - key: style.css
+                      path: style.css
+                    - key: playground.css
+                      path: playground.css
+                    - key: app.js
+                      path: app.js
+              - configMap:
+                  name: arm-lab-202355707-model
+                  items:
+                    - key: config.js
+                      path: config.js
+        - name: nginx-config
+          configMap:
+            name: arm-lab-202355707-content
+            items:
+              - key: nginx.conf
+                path: nginx.conf
+        - name: runtime
+          emptyDir:
+            sizeLimit: 32Mi

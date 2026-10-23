@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f5f2">
+  <meta name="description" content="관절과 목표 좌표를 조작하며 로봇암의 기구학을 체험하는 브라우저 시뮬레이터">
+  <title>ARM / LAB — 로봇암 디지털 트윈 체험</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ee7045'/%3E%3Cpath d='M9 24v-5l9-6-4-6m-5 17h15' stroke='white' stroke-width='3' fill='none'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="playground.css">
+  <script src="config.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="ARM LAB 홈"><span class="brand-icon">↗</span> ARM<span class="brand-slash">/</span>LAB <span class="edition">INTERACTIVE SYSTEMS</span></a>
+    <nav class="top-meta" aria-label="페이지 탐색"><a href="#playground">체험하기</a><a href="#about-project">프로젝트 소개</a><span class="divider"></span><span class="status-dot"></span> BROWSER SIMULATION <span class="divider"></span><span id="student-label">202355707</span></nav>
+  </header>
+  <main>
+    <section class="intro">
+      <div><div class="eyebrow"><span class="tiny-line"></span> DIGITAL TWIN PLAYGROUND <span class="version">V.02</span></div><h1>로봇암과 조금 더 가까이<span class="orange">.</span></h1><p>가상 로봇암을 직접 움직이며, 관절과 좌표가 연결되는 원리를 탐험하세요.<br>집게를 잡고 움직이거나, 작은 목표들을 톡 눌러보세요.</p></div>
+      <div class="intro-note"><span class="note-icon">☺</span><div><strong>안녕, 나는 <span data-bot-name>아리</span>!</strong><span>3-DOF 로봇암 · 기구학 인터랙티브 체험</span></div></div>
+    </section>
+    <div class="workspace" id="playground">
+      <section class="viewer-panel" aria-labelledby="viewer-title">
+        <div class="panel-heading"><div><span class="section-number">01</span><h2 id="viewer-title">아리의 플레이그라운드</h2></div><div class="viewer-heading-actions"><div class="view-tabs" role="group" aria-label="시점"><button class="view-tab active" data-view="perspective" aria-pressed="true">자유 시점</button><button class="view-tab" data-view="front" aria-pressed="false">정면</button><button class="view-tab" data-view="top" aria-pressed="false">위에서</button></div><button id="focus-mode" class="focus-button" aria-pressed="false">⛶ <span>크게 보기</span></button></div></div>
+        <div class="canvas-wrap"><canvas id="scene" tabindex="0" aria-label="로봇암 체험 화면. 직접 조작 모드에서는 집게를 드래그하거나 목표를 클릭합니다. 시점 모드에서는 드래그로 회전합니다. 키보드 방향키는 시점을 회전하고 더하기와 빼기는 확대 축소합니다."></canvas>
+          <div class="canvas-label"><span class="live-dot"></span> ARI / ARM-03 <span>/ KINEMATIC PLAYGROUND</span></div>
+          <div class="canvas-mode" id="scene-state">MANUAL CONTROL</div>
+          <div class="canvas-legend"><span><i class="legend-tool"></i> 말단 위치</span><span><i class="legend-target"></i> 목표 좌표</span><span><i class="legend-trail"></i> 이동 궤적</span></div>
+          <div class="stage-tools" role="group" aria-label="마우스 조작 방식"><button class="active" data-tool="interact" aria-pressed="true">✧ 직접 조작</button><button data-tool="orbit" aria-pressed="false">◎ 시점 회전</button></div>
+          <div class="bot-bubble" id="bot-bubble" role="status" aria-live="polite"><span class="bubble-face">•ᴗ•</span><div><strong data-bot-name>아리</strong><span id="bot-message">집게를 잡고 살짝 움직여 봐!</span></div></div>
+          <div class="canvas-help" id="canvas-help">집게 드래그 · 목표 클릭 · 스크롤 확대</div>
+          <button class="camera-reset" id="camera-reset" aria-label="시점 초기화" title="시점 초기화">↺</button>
+        </div>
+        <div class="viewer-toolbar"><div class="playback"><button id="play" class="play-button"><span id="play-icon">▶</span><span id="play-label">데모 재생</span></button><button id="wave" class="fun-button">✋ 인사하기</button><button id="grip" class="fun-button" aria-pressed="false">집게 열기</button><button id="home" class="text-button">홈 자세</button><button id="reset" class="text-button">초기화</button></div><div class="viewer-options"><div class="palette" role="group" aria-label="로봇 색상"><button data-color="peach" class="selected" style="--swatch:#ec9a69" aria-label="살구색" aria-pressed="true"></button><button data-color="mint" style="--swatch:#84bca9" aria-label="민트색" aria-pressed="false"></button><button data-color="lilac" style="--swatch:#b4a2d0" aria-label="보라색" aria-pressed="false"></button></div><label class="toggle-label"><input id="show-trail" type="checkbox" checked><span class="toggle-track"></span>궤적 표시</label></div></div>
+        <div class="mission-strip"><div><span class="mission-icon">✦</span><strong>작은 도전</strong><span class="mission-description">목표 A · B · C를 모두 터치해 보세요.</span></div><div class="mission-targets"><button data-checkpoint="0" aria-label="목표 A로 이동">A</button><button data-checkpoint="1" aria-label="목표 B로 이동">B</button><button data-checkpoint="2" aria-label="목표 C로 이동">C</button><output id="mission-score" aria-live="polite">0 / 3</output></div></div>
+        <div class="telemetry"><div><span class="metric-label">END EFFECTOR / X</span><strong><span id="pos-x">0.00</span><small>m</small></strong></div><div><span class="metric-label">Y · 높이</span><strong><span id="pos-y">0.00</span><small>m</small></strong></div><div><span class="metric-label">Z · 깊이</span><strong><span id="pos-z">0.00</span><small>m</small></strong></div><div class="metric-status"><span class="metric-label">모델 상태</span><strong id="model-status">준비 완료</strong><span id="motion-detail">수동 조작 대기</span></div></div>
+      </section>
+      <aside class="control-panel" aria-labelledby="control-title">
+        <div class="panel-heading"><div><span class="section-number">02</span><h2 id="control-title">모션 컨트롤</h2></div><span class="chip">3 DOF</span></div>
+        <div class="control-body">
+          <div class="control-section-title"><h3>관절 조작</h3><span>JOINT CONTROL</span></div>
+          <div class="joint"><label for="joint-base"><span class="joint-tag">J1</span>베이스 회전 <output id="value-base" for="joint-base">25°</output></label><input id="joint-base" type="range" min="-180" max="180" step="1" value="25"><div class="range-labels"><span>-180°</span><span>180°</span></div></div>
+          <div class="joint"><label for="joint-shoulder"><span class="joint-tag">J2</span>숄더 <output id="value-shoulder" for="joint-shoulder">60°</output></label><input id="joint-shoulder" type="range" min="-20" max="110" step="1" value="60"><div class="range-labels"><span>-20°</span><span>110°</span></div></div>
+          <div class="joint"><label for="joint-elbow"><span class="joint-tag">J3</span>엘보 <output id="value-elbow" for="joint-elbow">75°</output></label><input id="joint-elbow" type="range" min="0" max="150" step="1" value="75"><div class="range-labels"><span>0°</span><span>150°</span></div></div>
+          <div class="control-divider"></div>
+          <div class="control-section-title"><h3>목표 좌표</h3><span>INVERSE KINEMATICS</span></div>
+          <form id="target-form"><div class="coordinate-inputs"><label>X <span>m</span><input id="target-x" type="number" min="-3.3" max="3.3" step="0.01" value="1.8" required></label><label>Y <span>m</span><input id="target-y" type="number" min="0.15" max="3.95" step="0.01" value="1.4" required></label><label>Z <span>m</span><input id="target-z" type="number" min="-3.3" max="3.3" step="0.01" value="1.0" required></label></div><button class="target-button" type="submit">목표 위치로 이동 <span>↗</span></button></form>
+          <p class="feedback" id="feedback" role="status" aria-live="polite">좌표를 입력하면 필요한 관절 각도를 계산합니다.</p>
+          <div class="control-divider"></div>
+          <div class="control-section-title"><h3>자세 프리셋</h3><span>QUICK POSES</span></div>
+          <div class="presets"><button data-preset="ready"><span>01</span>준비 자세 <i>↗</i></button><button data-preset="reach"><span>02</span>앞으로 뻗기 <i>↗</i></button><button data-preset="pick"><span>03</span>집기 접근 <i>↗</i></button><button data-preset="place"><span>04</span>옮기기 <i>↗</i></button></div>
+        </div>
+      </aside>
+    </div>
+    <section class="lower-grid">
+      <div class="chart-panel"><div class="lower-heading"><div><span class="section-number">03</span><h2>관절의 움직임</h2></div><div class="chart-legend"><span><i style="background:#ee794d"></i>J1</span><span><i style="background:#678b90"></i>J2</span><span><i style="background:#b3a287"></i>J3</span></div></div><canvas id="chart" aria-label="최근 20초 동안의 관절 각도 그래프"></canvas><div class="chart-footer"><span>최근 20초 · 각도(°)</span><button class="text-button" id="export">상태 JSON 내보내기 ↗</button></div></div>
+      <div class="about-panel"><div class="eyebrow">HOW IT WORKS</div><h2>움직임을 이해하는<br>가장 직관적인 실험실.</h2><p>관절 각도에서 말단 위치를 구하는 <strong>정기구학</strong>, 목표 위치에서 관절 각도를 구하는 <strong>역기구학</strong>을 직접 체험합니다.</p><div class="honesty-note"><span>ⓘ</span><p>브라우저 기반 교육용 모의 시뮬레이션입니다. MuJoCo 물리 엔진·실제 로봇·센서와 연결되지 않으며, 동역학과 충돌을 정밀하게 해석하지 않습니다.</p></div></div>
+    </section>
+    <section class="project-story" id="about-project" aria-labelledby="project-title"><div class="story-intro"><div class="eyebrow"><span class="tiny-line"></span> ABOUT THIS PROJECT</div><h2 id="project-title">이 작은 실험실에서<br>무엇을 배우나요?</h2><p>로봇암의 가상 모델을 웹서비스로 제공하는 지능형 IoT 플랫폼 과제입니다. 로봇의 동작 원리를 체험하고, 같은 서비스를 컨테이너로 재현하는 과정을 함께 다룹니다.</p></div><div class="story-cards"><article><span>01 / MODEL</span><h3>관절에서 위치로</h3><p>슬라이더로 관절을 움직여 보세요. 각도 변화가 집게의 X·Y·Z 좌표로 어떻게 이어지는지 확인할 수 있습니다.</p></article><article><span>02 / INTERACT</span><h3>목표에서 움직임으로</h3><p>집게를 끌거나 목표를 선택하면 역기구학으로 가능한 자세를 찾습니다. 닿을 수 없는 위치에는 이유를 안내합니다.</p></article><article><span>03 / DEPLOY</span><h3>가상 모델을 웹서비스로</h3><p>OpenShift의 Deployment·Service·Route로 제공하고, 두 ConfigMap으로 화면과 모델 설정을 분리합니다. Probe는 서버 상태를 확인합니다.</p></article></div></section>
+    <footer><span>ARM / LAB <span class="footer-dot">·</span> 지능형 IoT 플랫폼</span><span>202355707 <span class="footer-dot">/</span> OPENSHIFT CONTAINER PROJECT</span></footer>
+  </main>
+</body>
+</html>

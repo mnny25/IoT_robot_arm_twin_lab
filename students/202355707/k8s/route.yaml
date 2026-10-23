@@ -1,0 +1,20 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: arm-lab-202355707
+  labels:
+    app: arm-lab-202355707
+    app.kubernetes.io/name: arm-lab
+    app.kubernetes.io/instance: arm-lab-202355707
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: robot-arm-twin
+spec:
+  to:
+    kind: Service
+    name: arm-lab-202355707
+  port:
+    # Service의 포트 이름 http로 연결합니다.
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
