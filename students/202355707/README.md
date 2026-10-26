@@ -2,7 +2,7 @@
 
 **학번 202355707 · 지능형 IoT 플랫폼 · 나만의 컨테이너 만들기**
 
-> 초기 버전은 Sandbox에서 HTTPS 접속과 데모 동작을 확인했습니다. 최신 플레이그라운드는 로컬 기능 검증을 마쳤습니다. 최신 YAML 재적용과 삭제 후 재배포, 실제 캡처 등록은 추가 확인이 필요합니다. 이 문서에서는 로컬 점검과 Sandbox 검증을 구분합니다.
+> 초기 버전은 Sandbox에서 HTTPS 접속과 데모 동작을 확인했습니다. 최신 플레이그라운드는 로컬 기능 검증을 마쳤습니다. 최신 YAML 재적용과 삭제 후 재배포, 실제 캡처 등록은 추가 확인이 필요합니다.
 
 ## 1. 컨테이너 소개
 
@@ -24,7 +24,7 @@ ARM / LAB은 가상 로봇암의 관절과 목표 위치를 직접 조작하며 
 
 - Y축이 높이인 3 DOF 모델입니다. 단위는 거리 m, 각도 °입니다.
 - 기본 길이는 베이스 0.65 m, 상완 1.8 m, 전완 1.5 m입니다. 이 값은 모델 ConfigMap으로 제공합니다.
-- 관절 범위는 J1 -180~180°, J2 -20~110°, J3 0~150°입니다. 엘보·말단 중심의 바닥 여유 높이는 0.15 m 이상입니다.
+- 관절 범위는 J1 -180°에서 180°, J2 -20°에서 110°, J3 0°에서 150°입니다. 엘보·말단 중심의 바닥 여유 높이는 0.15 m 이상입니다.
 - 목표 자세로 이동할 때 관절 공간의 smoothstep 보간과 61개 지점의 경로 표본 검사를 사용합니다. 역기구학은 한 가지 굽힘 해만 계산합니다.
 - 집게 드래그는 카메라를 향하는 수직 평면에서 목표를 계산합니다. 바닥 클릭은 선택한 X/Z와 입력창의 Y 높이를 사용합니다.
 - 물체 집기·중력·관성·접촉력·정밀 충돌을 해석하지 않습니다. 집게 열기·표정은 시각 표현이며 목표 완료는 말단과 목표의 거리 0.08 m 미만으로 판정합니다.
@@ -138,7 +138,7 @@ oc apply -f k8s/
 oc rollout status deployment/arm-lab-202355707 --timeout=180s
 ```
 
-생성기는 두 ConfigMap과 Deployment의 `checksum/content`, `checksum/model`을 함께 갱신합니다. 내용이 바뀌면 Pod 템플릿의 체크섬도 달라지므로 `oc apply` 시 롤링 업데이트가 발생합니다. 같은 입력으로 다시 생성하면 결과도 같습니다. 변경된 YAML 3개도 함께 Commit합니다.
+생성기는 두 ConfigMap과 Deployment의 `checksum/content`, `checksum/model`을 함께 갱신합니다. 내용이 바뀌면 Pod 템플릿의 체크섬도 달라지므로 `oc apply` 시 롤링 업데이트가 발생합니다. 변경된 YAML 3개도 함께 Commit합니다.
 
 웹 콘솔에서 ConfigMap만 직접 편집하면 체크섬이 자동 갱신되지 않으므로 Deployment의 롤아웃 재시작이 필요합니다. 제출 전에는 원본과 YAML을 다시 동기화합니다. 자세한 콘솔 절차와 설정 변경 실험은 [검증 가이드](docs/verification.md)에 정리했습니다.
 
@@ -158,10 +158,10 @@ oc rollout status deployment/arm-lab-202355707 --timeout=180s
 | 삭제 후 재배포 | 추가 확인 필요 | `images/redeploy.png` 등록 필요 |
 | 모델 설정 변경·Probe | 추가 확인 필요 | [검증 가이드](docs/verification.md)의 비교·캡처 절차 |
 
-실제 배포 후에는 위 표의 상태를 결과에 맞게 갱신하고 검증 일시와 Route URL, 캡처를 본문에 넣습니다. 아직 없는 이미지를 배포 성공 증빙으로 표시하지 않았습니다.
+배포 후 검증 일시, Route URL, 실제 캡처와 함께 위 표를 갱신합니다.
 
 <details>
-<summary>로컬 화면 미리보기 - Sandbox 배포 증빙과 구분</summary>
+<summary>로컬 화면 미리보기</summary>
 
 ![V.02 로컬 브라우저 미리보기](images/local-preview.png)
 
@@ -177,11 +177,9 @@ oc rollout status deployment/arm-lab-202355707 --timeout=180s
 | 비루트 웹서버의 포트·쓰기 권한 | 8080, 읽기 전용 파일, /tmp emptyDir 사용 | 구성 점검, 최신 Sandbox 재검증 필요 |
 | 도달 불가능한 목표·바닥 아래 자세 | 관절 제한·역기구학·바닥 여유 높이 검사와 화면 안내 | 도달·거부 사례 로컬 검증 |
 
-위 표는 구현·설계 과정을 정리한 것으로 실제 Sandbox에서 발생한 오류를 재현한 기록은 아닙니다. 배포 중 오류가 발생하면 메시지와 원인, 수정 내용, 재확인 결과를 추가합니다.
-
 ## 7. AI·참고자료 활용 내역
 
-- **OpenAI Codex:** 주제 구체화, 웹 UI·기구학 코드·YAML·문서 초안 작성과 로컬 검증에 활용했습니다. 제출자는 코드·YAML의 역할을 이해하고 본인 Sandbox에서 실행 결과를 확인합니다.
+- **OpenAI Codex:** 주제 구체화, 웹 UI·기구학 코드·YAML·문서 초안 작성과 로컬 검증에 활용했습니다.
 - **과제 안내 PDF:** README 필수 항목, 학번 폴더, YAML 재배포 및 채점 기준을 참고했습니다.
 - **4-1·4-2·5-2 강의:** Deployment·Service·Route 연결, OpenShift 배포, 자원 제한·Probe·ConfigMap을 참고했습니다.
 - [Red Hat UBI Nginx 이미지](https://catalog.redhat.com/en/software/containers/ubi9/nginx-124/657b066b6c1bc124a1d7ff39) · [이미지 공식 사용 설명](https://github.com/sclorg/nginx-container/blob/master/1.24/README.md)
@@ -189,20 +187,8 @@ oc rollout status deployment/arm-lab-202355707 --timeout=180s
 - [Kubernetes projected volume](https://kubernetes.io/docs/concepts/storage/projected-volumes/) · [Probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) · [Deployment 업데이트](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) · [이미지 digest](https://kubernetes.io/docs/concepts/containers/images/)
 - [Microduck Sandbox](https://huggingface.co/spaces/pollen-robotics/microduck-simulator): 직접 조작하는 로봇 체험 방향을 참고했습니다. 원본 코드·모델·학습 정책·미디어는 사용하지 않았습니다.
 
-## 8. 채점 기준 대응과 제출 체크리스트
+## 8. 제출 전 확인
 
-| 평가 항목 | 배점 | 이 프로젝트의 대응 |
-| --- | ---: | --- |
-| 배포 성공 | 40 | `k8s/`만으로 배포, Running·HTTPS 접속·삭제 후 재배포 검증 |
-| 소개·아키텍처 문서 | 25 | 목적·기능·구성도·Object 역할·이미지·방법·실제 결과·AI 활용 내역 |
-| YAML 품질 | 20 | 이름·라벨·포트·참조 일치, resources, 자동 생성 필드 제외, 이미지 고정·체크섬 점검 |
-| 추가 Object 활용 | 15 | Content/Model ConfigMap의 실제 파일 주입과 설정 변경, 시작·준비·생존 Probe 설명 및 확인 |
-
-추가 활용은 총 100점 중 15점입니다. 종류별 배점과 필수 개수는 안내에 명시되지 않았습니다. Object 역할과 실제 작동 결과를 설명합니다.
-
-- [x] 본인 학번 폴더와 YAML 5개 구성
-- [x] README 필수 항목, 원본과 생성 YAML, AI 활용 내역 정리
-- [x] 로컬 웹 기능과 YAML 정적 연결 검사
 - [ ] 최신 YAML로 본인 Sandbox 배포, Pod Running / READY 1/1 확인
 - [ ] 실제 HTTPS 화면·Topology 캡처 등록 및 본문 삽입
 - [ ] ConfigMap 설정 변경·Probe 확인 결과 기록
