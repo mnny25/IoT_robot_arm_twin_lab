@@ -39,6 +39,16 @@
     const { elbow, tip } = forward(angles);
     return elbow[1] >= cfg.floorClearance && tip[1] >= cfg.floorClearance;
   }
+  window.armLabPoses = Object.freeze({
+    snapshot: () => [...state.angles],
+    load: (angles, name) => {
+      if (!Array.isArray(angles) || angles.length !== 3 || !angles.every(Number.isFinite)) return false;
+      if (!move(angles, '저장한 자세: ' + name)) return false;
+      clearPreset(); state.target = null;
+      feedback('보관함의 자세로 이동합니다.');
+      return true;
+    }
+  });
   function inverse(target) {
     if (!target.every(Number.isFinite)) return null;
     const [x, y, z] = target;

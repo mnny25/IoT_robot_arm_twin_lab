@@ -11,12 +11,9 @@ metadata:
 spec:
   replicas: 1
   revisionHistoryLimit: 2
-  # 새 Pod가 준비된 뒤 기존 Pod를 교체합니다. 교체 중에는 최대 2개가 실행됩니다.
+  # RWO PVC를 두 Pod가 동시에 사용하지 않도록 기존 Pod 종료 후 교체합니다.
   strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+    type: Recreate
   minReadySeconds: 3
   selector:
     matchLabels:
@@ -25,8 +22,9 @@ spec:
     metadata:
       # tools/sync-configmap.py가 갱신합니다. 설정 변경을 Pod 교체와 연결합니다.
       annotations:
-        checksum/content: "b85151291f854a28fb8181b343ffbfa2ccfda371cfb4dfef28a7d1506aa2ec54"
-        checksum/model: "92d0ad59014be0a4596d6c00d172444f3dbcd581ce45a86a976ec87d8e49b258"
+        checksum/api: "14c28b52672dd3a23335b7f4a1a14263b6bcaf0c7375520d9db131dc95a5a9f2"
+        checksum/content: "105bc8a0c3714dd11f93a3c4f08f818890f8ef7b974e8afbfed724aacec19abf"
+        checksum/model: "79c9b4f69c05acd1123c6f334babca76ca7defc8f432ddb8edbe2767c260bf5d"
       labels:
         app: arm-lab-202355707
         app.kubernetes.io/name: arm-lab
@@ -39,6 +37,7 @@ spec:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
+      terminationGracePeriodSeconds: 15
       containers:
         - name: web
           # 태그가 갱신되어도 동일한 이미지가 배포되도록 multi-arch digest 고정.
@@ -91,6 +90,58 @@ spec:
               readOnly: true
             - name: runtime
               mountPath: /tmp
+        - name: api
+          image: registry.access.redhat.com/ubi9/python-312:1@sha256:26533737695d39d003558de435f54f52bd54879d8184a0d7038147d1ff3ea9bd
+          imagePullPolicy: IfNotPresent
+          command: ["python3", "-B", "/opt/arm-lab/server.py"]
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+          ports:
+            - name: api
+              containerPort: 8081
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: api
+            periodSeconds: 2
+            timeoutSeconds: 2
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: api
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: api
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          volumeMounts:
+            - name: api-code
+              mountPath: /opt/arm-lab
+              readOnly: true
+            - name: admin-auth
+              mountPath: /etc/arm-lab-auth
+              readOnly: true
+            - name: pose-data
+              mountPath: /data
       volumes:
         - name: web-files
           projected:
@@ -106,6 +157,10 @@ spec:
                       path: playground.css
                     - key: app.js
                       path: app.js
+                    - key: library.js
+                      path: library.js
+                    - key: library.css
+                      path: library.css
               - configMap:
                   name: arm-lab-202355707-model
                   items:
@@ -117,6 +172,15 @@ spec:
             items:
               - key: nginx.conf
                 path: nginx.conf
+        - name: api-code
+          configMap:
+            name: arm-lab-202355707-api
+        - name: admin-auth
+          secret:
+            secretName: arm-lab-202355707-admin
+        - name: pose-data
+          persistentVolumeClaim:
+            claimName: arm-lab-202355707-poses
         - name: runtime
           emptyDir:
             sizeLimit: 32Mi

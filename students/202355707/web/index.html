@@ -11,6 +11,8 @@
   <link rel="stylesheet" href="playground.css">
   <script src="config.js" defer></script>
   <script src="app.js" defer></script>
+  <link rel="stylesheet" href="library.css">
+  <script src="library.js" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -19,7 +21,7 @@
   </header>
   <main>
     <section class="intro">
-      <div><div class="eyebrow"><span class="tiny-line"></span> DIGITAL TWIN PLAYGROUND <span class="version">V.02</span></div><h1>로봇암과 조금 더 가까이<span class="orange">.</span></h1><p>가상 로봇암을 직접 움직이며, 관절과 좌표가 연결되는 원리를 탐험하세요.<br>집게를 잡고 움직이거나, 작은 목표들을 톡 눌러보세요.</p></div>
+      <div><div class="eyebrow"><span class="tiny-line"></span> DIGITAL TWIN PLAYGROUND <span class="version">V.03</span></div><h1>로봇암과 조금 더 가까이<span class="orange">.</span></h1><p>가상 로봇암을 직접 움직이며, 관절과 좌표가 연결되는 원리를 탐험하세요.<br>집게를 잡고 움직이거나, 작은 목표들을 톡 눌러보세요.</p></div>
       <div class="intro-note"><span class="note-icon">☺</span><div><strong>안녕, 나는 <span data-bot-name>아리</span>!</strong><span>3-DOF 로봇암 · 기구학 인터랙티브 체험</span></div></div>
     </section>
     <div class="workspace" id="playground">
@@ -59,7 +61,15 @@
       <div class="chart-panel"><div class="lower-heading"><div><span class="section-number">03</span><h2>관절의 움직임</h2></div><div class="chart-legend"><span><i style="background:#ee794d"></i>J1</span><span><i style="background:#678b90"></i>J2</span><span><i style="background:#b3a287"></i>J3</span></div></div><canvas id="chart" aria-label="최근 20초 동안의 관절 각도 그래프"></canvas><div class="chart-footer"><span>최근 20초 · 각도(°)</span><button class="text-button" id="export">상태 JSON 내보내기 ↗</button></div></div>
       <div class="about-panel"><div class="eyebrow">HOW IT WORKS</div><h2>움직임을 이해하는<br>가장 직관적인 실험실.</h2><p>관절 각도에서 말단 위치를 구하는 <strong>정기구학</strong>, 목표 위치에서 관절 각도를 구하는 <strong>역기구학</strong>을 직접 체험합니다.</p><div class="honesty-note"><span>ⓘ</span><p>브라우저 기반 교육용 모의 시뮬레이션입니다. MuJoCo 물리 엔진·실제 로봇·센서와 연결되지 않으며, 동역학과 충돌을 정밀하게 해석하지 않습니다.</p></div></div>
     </section>
-    <section class="project-story" id="about-project" aria-labelledby="project-title"><div class="story-intro"><div class="eyebrow"><span class="tiny-line"></span> ABOUT THIS PROJECT</div><h2 id="project-title">이 작은 실험실에서<br>무엇을 배우나요?</h2><p>로봇암의 가상 모델을 웹서비스로 제공하는 지능형 IoT 플랫폼 과제입니다. 로봇의 동작 원리를 체험하고, 같은 서비스를 컨테이너로 재현하는 과정을 함께 다룹니다.</p></div><div class="story-cards"><article><span>01 / MODEL</span><h3>관절에서 위치로</h3><p>슬라이더로 관절을 움직여 보세요. 각도 변화가 집게의 X·Y·Z 좌표로 어떻게 이어지는지 확인할 수 있습니다.</p></article><article><span>02 / INTERACT</span><h3>목표에서 움직임으로</h3><p>집게를 끌거나 목표를 선택하면 역기구학으로 가능한 자세를 찾습니다. 닿을 수 없는 위치에는 이유를 안내합니다.</p></article><article><span>03 / DEPLOY</span><h3>가상 모델을 웹서비스로</h3><p>OpenShift의 Deployment·Service·Route로 제공하고, 두 ConfigMap으로 화면과 모델 설정을 분리합니다. Probe는 서버 상태를 확인합니다.</p></article></div></section>
+    <section class="pose-library" aria-labelledby="library-title">
+      <div class="library-heading"><div><div class="eyebrow">MY POSE COLLECTION</div><h2 id="library-title">나의 자세 보관함</h2></div><span class="chip" id="pose-count">0 / 100</span></div>
+      <p>마음에 드는 순간의 관절 각도를 저장하고 다시 움직여 보세요. 방문자 모두가 함께 쓰는 보관함입니다.</p>
+      <form id="pose-save-form"><label for="pose-name">자세 이름 <input id="pose-name" maxlength="40" required placeholder="예: 아리의 인사 자세"></label><button type="submit" id="save-pose">현재 자세 저장</button><button type="button" id="refresh-poses">새로고침</button></form>
+      <p id="library-status" role="status" aria-live="polite">보관함을 불러오고 있어요.</p>
+      <ul id="pose-list" aria-label="저장한 자세 목록"></ul>
+      <details class="library-admin"><summary>관리자 삭제</summary><p>자세를 삭제할 때만 관리자 키가 필요합니다. 입력한 키는 삭제 요청 후 지워집니다.</p><label for="admin-key">관리자 키 <input type="password" id="admin-key" autocomplete="off" maxlength="256" placeholder="관리자 키 입력"></label></details>
+    </section>
+    <section class="project-story" id="about-project" aria-labelledby="project-title"><div class="story-intro"><div class="eyebrow"><span class="tiny-line"></span> ABOUT THIS PROJECT</div><h2 id="project-title">이 작은 실험실에서<br>무엇을 배우나요?</h2><p>로봇암의 가상 모델을 웹서비스로 제공하는 지능형 IoT 플랫폼 과제입니다. 로봇의 동작 원리를 체험하고, 같은 서비스를 컨테이너로 재현하는 과정을 함께 다룹니다.</p></div><div class="story-cards"><article><span>01 / MODEL</span><h3>관절에서 위치로</h3><p>슬라이더로 관절을 움직여 보세요. 각도 변화가 집게의 X·Y·Z 좌표로 어떻게 이어지는지 확인할 수 있습니다.</p></article><article><span>02 / INTERACT</span><h3>목표에서 움직임으로</h3><p>집게를 끌거나 목표를 선택하면 역기구학으로 가능한 자세를 찾습니다. 닿을 수 없는 위치에는 이유를 안내합니다.</p></article><article><span>03 / DEPLOY</span><h3>가상 모델을 웹서비스로</h3><p>OpenShift의 Deployment·Service·Route로 제공하고, ConfigMap으로 화면, 모델과 API 코드를 제공합니다. 저장한 자세는 PVC에 보관하고 관리자 삭제는 Secret으로 인증합니다. Probe는 서버 상태를 확인합니다.</p></article></div></section>
     <footer><span>ARM / LAB <span class="footer-dot">·</span> 지능형 IoT 플랫폼</span><span>202355707 <span class="footer-dot">/</span> OPENSHIFT CONTAINER PROJECT</span></footer>
   </main>
 </body>

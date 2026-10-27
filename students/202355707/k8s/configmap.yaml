@@ -1,4 +1,4 @@
-# tools/sync-configmap.py로 생성. 원본은 web/에서 수정하세요.
+# tools/sync-configmap.py로 생성. 원본은 web/ 또는 backend/에서 수정하세요.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -24,6 +24,8 @@ data:
       <link rel="stylesheet" href="playground.css">
       <script src="config.js" defer></script>
       <script src="app.js" defer></script>
+      <link rel="stylesheet" href="library.css">
+      <script src="library.js" defer></script>
     </head>
     <body>
       <header class="topbar">
@@ -32,7 +34,7 @@ data:
       </header>
       <main>
         <section class="intro">
-          <div><div class="eyebrow"><span class="tiny-line"></span> DIGITAL TWIN PLAYGROUND <span class="version">V.02</span></div><h1>로봇암과 조금 더 가까이<span class="orange">.</span></h1><p>가상 로봇암을 직접 움직이며, 관절과 좌표가 연결되는 원리를 탐험하세요.<br>집게를 잡고 움직이거나, 작은 목표들을 톡 눌러보세요.</p></div>
+          <div><div class="eyebrow"><span class="tiny-line"></span> DIGITAL TWIN PLAYGROUND <span class="version">V.03</span></div><h1>로봇암과 조금 더 가까이<span class="orange">.</span></h1><p>가상 로봇암을 직접 움직이며, 관절과 좌표가 연결되는 원리를 탐험하세요.<br>집게를 잡고 움직이거나, 작은 목표들을 톡 눌러보세요.</p></div>
           <div class="intro-note"><span class="note-icon">☺</span><div><strong>안녕, 나는 <span data-bot-name>아리</span>!</strong><span>3-DOF 로봇암 · 기구학 인터랙티브 체험</span></div></div>
         </section>
         <div class="workspace" id="playground">
@@ -72,7 +74,15 @@ data:
           <div class="chart-panel"><div class="lower-heading"><div><span class="section-number">03</span><h2>관절의 움직임</h2></div><div class="chart-legend"><span><i style="background:#ee794d"></i>J1</span><span><i style="background:#678b90"></i>J2</span><span><i style="background:#b3a287"></i>J3</span></div></div><canvas id="chart" aria-label="최근 20초 동안의 관절 각도 그래프"></canvas><div class="chart-footer"><span>최근 20초 · 각도(°)</span><button class="text-button" id="export">상태 JSON 내보내기 ↗</button></div></div>
           <div class="about-panel"><div class="eyebrow">HOW IT WORKS</div><h2>움직임을 이해하는<br>가장 직관적인 실험실.</h2><p>관절 각도에서 말단 위치를 구하는 <strong>정기구학</strong>, 목표 위치에서 관절 각도를 구하는 <strong>역기구학</strong>을 직접 체험합니다.</p><div class="honesty-note"><span>ⓘ</span><p>브라우저 기반 교육용 모의 시뮬레이션입니다. MuJoCo 물리 엔진·실제 로봇·센서와 연결되지 않으며, 동역학과 충돌을 정밀하게 해석하지 않습니다.</p></div></div>
         </section>
-        <section class="project-story" id="about-project" aria-labelledby="project-title"><div class="story-intro"><div class="eyebrow"><span class="tiny-line"></span> ABOUT THIS PROJECT</div><h2 id="project-title">이 작은 실험실에서<br>무엇을 배우나요?</h2><p>로봇암의 가상 모델을 웹서비스로 제공하는 지능형 IoT 플랫폼 과제입니다. 로봇의 동작 원리를 체험하고, 같은 서비스를 컨테이너로 재현하는 과정을 함께 다룹니다.</p></div><div class="story-cards"><article><span>01 / MODEL</span><h3>관절에서 위치로</h3><p>슬라이더로 관절을 움직여 보세요. 각도 변화가 집게의 X·Y·Z 좌표로 어떻게 이어지는지 확인할 수 있습니다.</p></article><article><span>02 / INTERACT</span><h3>목표에서 움직임으로</h3><p>집게를 끌거나 목표를 선택하면 역기구학으로 가능한 자세를 찾습니다. 닿을 수 없는 위치에는 이유를 안내합니다.</p></article><article><span>03 / DEPLOY</span><h3>가상 모델을 웹서비스로</h3><p>OpenShift의 Deployment·Service·Route로 제공하고, 두 ConfigMap으로 화면과 모델 설정을 분리합니다. Probe는 서버 상태를 확인합니다.</p></article></div></section>
+        <section class="pose-library" aria-labelledby="library-title">
+          <div class="library-heading"><div><div class="eyebrow">MY POSE COLLECTION</div><h2 id="library-title">나의 자세 보관함</h2></div><span class="chip" id="pose-count">0 / 100</span></div>
+          <p>마음에 드는 순간의 관절 각도를 저장하고 다시 움직여 보세요. 방문자 모두가 함께 쓰는 보관함입니다.</p>
+          <form id="pose-save-form"><label for="pose-name">자세 이름 <input id="pose-name" maxlength="40" required placeholder="예: 아리의 인사 자세"></label><button type="submit" id="save-pose">현재 자세 저장</button><button type="button" id="refresh-poses">새로고침</button></form>
+          <p id="library-status" role="status" aria-live="polite">보관함을 불러오고 있어요.</p>
+          <ul id="pose-list" aria-label="저장한 자세 목록"></ul>
+          <details class="library-admin"><summary>관리자 삭제</summary><p>자세를 삭제할 때만 관리자 키가 필요합니다. 입력한 키는 삭제 요청 후 지워집니다.</p><label for="admin-key">관리자 키 <input type="password" id="admin-key" autocomplete="off" maxlength="256" placeholder="관리자 키 입력"></label></details>
+        </section>
+        <section class="project-story" id="about-project" aria-labelledby="project-title"><div class="story-intro"><div class="eyebrow"><span class="tiny-line"></span> ABOUT THIS PROJECT</div><h2 id="project-title">이 작은 실험실에서<br>무엇을 배우나요?</h2><p>로봇암의 가상 모델을 웹서비스로 제공하는 지능형 IoT 플랫폼 과제입니다. 로봇의 동작 원리를 체험하고, 같은 서비스를 컨테이너로 재현하는 과정을 함께 다룹니다.</p></div><div class="story-cards"><article><span>01 / MODEL</span><h3>관절에서 위치로</h3><p>슬라이더로 관절을 움직여 보세요. 각도 변화가 집게의 X·Y·Z 좌표로 어떻게 이어지는지 확인할 수 있습니다.</p></article><article><span>02 / INTERACT</span><h3>목표에서 움직임으로</h3><p>집게를 끌거나 목표를 선택하면 역기구학으로 가능한 자세를 찾습니다. 닿을 수 없는 위치에는 이유를 안내합니다.</p></article><article><span>03 / DEPLOY</span><h3>가상 모델을 웹서비스로</h3><p>OpenShift의 Deployment·Service·Route로 제공하고, ConfigMap으로 화면, 모델과 API 코드를 제공합니다. 저장한 자세는 PVC에 보관하고 관리자 삭제는 Secret으로 인증합니다. Probe는 서버 상태를 확인합니다.</p></article></div></section>
         <footer><span>ARM / LAB <span class="footer-dot">·</span> 지능형 IoT 플랫폼</span><span>202355707 <span class="footer-dot">/</span> OPENSHIFT CONTAINER PROJECT</span></footer>
       </main>
     </body>
@@ -111,7 +121,7 @@ data:
       let width = 0, height = 0, chartWidth = 0, chartHeight = 0;
       let lastTime = null, lastSample = -Infinity, dirty = true;
       let sceneFaces = [];
-    
+
       function forward(angles) {
         const [b, s, e] = angles.map(v => v * deg);
         const base = [0, cfg.baseHeight, 0];
@@ -125,6 +135,16 @@ data:
         const { elbow, tip } = forward(angles);
         return elbow[1] >= cfg.floorClearance && tip[1] >= cfg.floorClearance;
       }
+      window.armLabPoses = Object.freeze({
+        snapshot: () => [...state.angles],
+        load: (angles, name) => {
+          if (!Array.isArray(angles) || angles.length !== 3 || !angles.every(Number.isFinite)) return false;
+          if (!move(angles, '저장한 자세: ' + name)) return false;
+          clearPreset(); state.target = null;
+          feedback('보관함의 자세로 이동합니다.');
+          return true;
+        }
+      });
       function inverse(target) {
         if (!target.every(Number.isFinite)) return null;
         const [x, y, z] = target;
@@ -289,7 +309,7 @@ data:
         const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
         const link = document.createElement('a'); link.href = url; link.download = 'arm-lab-state.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
       });
-    
+
       // 작은 직교 투영 렌더러. 외부 WebGL/네트워크 의존성 없이 동작합니다.
       function project(p) {
         const scale = Math.min(width/7.6, height/5.8)*camera.zoom;
@@ -509,15 +529,117 @@ data:
       document.addEventListener('visibilitychange',()=>{lastTime=null;});
       resize();updateUI();requestAnimationFrame(tick);
     })();
+  library.js: |
+    'use strict';
+    (() => {
+      const $ = id => document.getElementById(id);
+      let busy = false;
+      function message(text, error = false) {
+        $('library-status').textContent = text;
+        $('library-status').classList.toggle('error', error);
+      }
+      async function request(path, options = {}) {
+        const response = await fetch(path, { ...options, signal: AbortSignal.timeout(10000), cache: 'no-store' });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(body.error || '저장 API에 연결하지 못했습니다. 잠시 후 다시 시도하세요.');
+        return body;
+      }
+      async function refresh() {
+        const { poses } = await request('/api/poses');
+        const list = $('pose-list');
+        list.replaceChildren();
+        if (!poses.length) {
+          const empty = document.createElement('li');
+          empty.textContent = '아직 저장한 자세가 없어요. 마음에 드는 자세에 이름을 붙여 보세요.';
+          list.append(empty);
+        }
+        poses.forEach(pose => {
+          const row = document.createElement('li');
+          const info = document.createElement('div');
+          const title = document.createElement('strong');
+          title.textContent = pose.name;
+          const detail = document.createElement('small');
+          detail.textContent = pose.angles.map((v, i) => `J${i + 1} ${Number(v).toFixed(1)}°`).join(' / ');
+          info.append(title, detail);
+          const actions = document.createElement('div');
+          const load = document.createElement('button');
+          load.textContent = '불러오기';
+          load.type = 'button';
+          load.addEventListener('click', () => {
+            if (window.armLabPoses.load(pose.angles, pose.name)) message(`‘${pose.name}’ 자세로 이동합니다.`);
+            else message('현재 자세에서 이동할 수 없는 경로예요. 홈 자세로 돌아간 뒤 다시 시도하세요.', true);
+          });
+          const remove = document.createElement('button');
+          remove.textContent = '삭제';
+          remove.type = 'button';
+          remove.addEventListener('click', async () => {
+            if (busy) return;
+            const token = $('admin-key').value;
+            $('admin-key').value = '';
+            if (!token) { message('삭제하려면 관리자 키를 입력하세요.', true); $('admin-key').focus(); return; }
+            if (!window.confirm(`‘${pose.name}’ 자세를 삭제할까요?`)) return;
+            busy = true;
+            try {
+              await request('/api/poses/' + pose.id, { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
+              await refresh();
+              message('자세를 삭제했습니다.');
+            } catch (error) { message(error.message, true); }
+            finally { busy = false; }
+          });
+          actions.append(load, remove);
+          row.append(info, actions);
+          list.append(row);
+        });
+        $('pose-count').textContent = `${poses.length} / 100`;
+      }
+      $('pose-save-form').addEventListener('submit', async event => {
+        event.preventDefault();
+        if (busy) return;
+        busy = true;
+        $('save-pose').disabled = true;
+        message('자세를 저장하고 있어요.');
+        try {
+          await request('/api/poses', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: $('pose-name').value.trim(), angles: window.armLabPoses.snapshot() }) });
+          $('pose-name').value = '';
+          await refresh();
+          message('저장했어요! 다음에 접속해도 보관함에서 불러올 수 있어요.');
+        } catch (error) { message(error.message, true); }
+        finally { busy = false; $('save-pose').disabled = false; }
+      });
+      $('refresh-poses').addEventListener('click', () => refresh().then(() => message('보관함을 새로 불러왔습니다.')).catch(error => message(error.message, true)));
+      refresh().then(() => message('마음에 드는 자세를 저장해 보세요. 보관함은 방문자 모두가 함께 사용합니다.')).catch(() => message('보관함에 연결하지 못했어요. 로봇암 체험은 계속 사용할 수 있습니다.', true));
+    })();
+  library.css: |
+    .pose-library { margin-top:24px; padding:24px; border:1px solid #e3e4dd; border-radius:12px; background:#fff; }
+    .library-heading { display:flex; justify-content:space-between; align-items:center; gap:16px; }
+    .library-heading h2 { margin:4px 0 10px; font-size:20px; }
+    .pose-library p { color:#66716c; font-size:13px; line-height:1.7; }
+    .pose-library button { padding:9px 14px; border:1px solid #dedfd6; border-radius:5px; background:#f7f7f2; color:#33413d; cursor:pointer; }
+    .pose-library button:focus-visible,.pose-library input:focus-visible { outline:2px solid #ee7045; outline-offset:3px; }
+    .pose-library input { border:1px solid #dedfd6; border-radius:5px; padding:10px; min-width:0; background:#fafbf7; color:#33413d; }
+    .pose-library label { font-size:13px; display:flex; align-items:center; gap:10px; }
+    #pose-save-form { display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 12px; }
+    #save-pose { background:#ee7045; color:white; border-color:#ee7045; }
+    #save-pose:disabled { opacity:.6; cursor:wait; }
+    #pose-list { list-style:none; padding:0; max-height:330px; overflow:auto; }
+    #pose-list li { display:flex; justify-content:space-between; align-items:center; gap:16px; border-top:1px solid #eeeee7; padding:14px 0; }
+    #pose-list li>div:last-child { display:flex; gap:8px; flex-shrink:0; }
+    #pose-list strong { display:block; font-size:14px; overflow-wrap:anywhere; }
+    #pose-list small { display:block; margin-top:5px; color:#77827c; font-size:11px; }
+    .pose-library .error { color:#b7472a; }
+    .library-admin { padding-top:16px; border-top:1px solid #eeeee7; }
+    .library-admin summary { cursor:pointer; font-size:13px; }
+    .library-admin label { margin-top:12px; flex-wrap:wrap; }
+    @media(max-width:600px) { .pose-library { padding:16px; } #pose-save-form label { width:100%; } #pose-name { flex:1; } #pose-list li { align-items:flex-start; flex-direction:column; } }
   nginx.conf: |
     pid /tmp/nginx.pid;
     worker_processes 1;
     error_log stderr warn;
-    
+
     events {
         worker_connections 256;
     }
-    
+
     http {
         types {
             text/html html;
@@ -535,7 +657,7 @@ data:
         fastcgi_temp_path /tmp/fastcgi_temp;
         uwsgi_temp_path /tmp/uwsgi_temp;
         scgi_temp_path /tmp/scgi_temp;
-    
+
         server {
             listen 8080;
             server_name _;
@@ -545,13 +667,22 @@ data:
             add_header X-Content-Type-Options nosniff always;
             add_header Referrer-Policy strict-origin-when-cross-origin always;
             add_header Cache-Control "no-cache" always;
-    
+
             location = /healthz {
                 access_log off;
                 default_type text/plain;
                 return 200 "ok\n";
             }
-    
+
+            location /api/ {
+                proxy_pass http://127.0.0.1:8081;
+                proxy_set_header Host $host;
+                proxy_set_header Authorization $http_authorization;
+                proxy_connect_timeout 3s;
+                proxy_read_timeout 10s;
+                client_max_body_size 4k;
+            }
+
             location / {
                 try_files $uri $uri/ =404;
             }

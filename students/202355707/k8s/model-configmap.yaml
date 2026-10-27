@@ -1,4 +1,4 @@
-# tools/sync-configmap.py로 생성. 원본은 web/에서 수정하세요.
+# tools/sync-configmap.py로 생성. 원본은 web/ 또는 backend/에서 수정하세요.
 apiVersion: v1
 kind: ConfigMap
 metadata:

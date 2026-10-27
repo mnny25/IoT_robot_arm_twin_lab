@@ -1,4 +1,6 @@
-# 배포·추가 Object 검증 가이드
+# 모델 설정 및 기존 배포 검증 가이드
+
+> 이 문서는 V.02 기준으로 작성된 기록입니다. V.03의 Secret, PVC와 재배포는 [새 검증 가이드](objects-v03.md)를 우선합니다. 현재 Pod는 web/api 컨테이너 2개, ConfigMap은 3개, 업데이트 전략은 Recreate입니다.
 
 명령의 실행 위치는 `students/202355707`입니다. 본인 Sandbox 프로젝트에서 수행하고 실제 확인한 결과만 README에 기록합니다.
 
@@ -8,8 +10,8 @@
 
 ```bash
 oc get configmap -l app=arm-lab-202355707
-oc exec deployment/arm-lab-202355707 -- cat /opt/app-root/src/config.js
-oc exec deployment/arm-lab-202355707 -- cat /etc/arm-lab/nginx.conf
+oc exec deployment/arm-lab-202355707 -c web -- cat /opt/app-root/src/config.js
+oc exec deployment/arm-lab-202355707 -c web -- cat /etc/arm-lab/nginx.conf
 ```
 
 첫 결과에는 content/model 두 ConfigMap이 나옵니다. 실제 컨테이너 파일에서 `speedDegreesPerSecond`, 길이·프리셋, Nginx의 `listen 8080`을 확인합니다.
@@ -25,7 +27,7 @@ python tools/sync-configmap.py
 python tools/verify-manifests.py
 oc apply -f k8s/
 oc rollout status deployment/arm-lab-202355707 --timeout=180s
-oc exec deployment/arm-lab-202355707 -- cat /opt/app-root/src/config.js
+oc exec deployment/arm-lab-202355707 -c web -- cat /opt/app-root/src/config.js
 ```
 
 4. 브라우저를 새로고침하고 같은 초기 자세에서 ‘옮기기’를 다시 실행합니다. 적용 값과 이동 시간이 길어지는 것을 확인합니다.

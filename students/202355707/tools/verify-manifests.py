@@ -33,7 +33,7 @@ def load(path):
 def check():
     paths = sorted((root / "k8s").glob("*.yaml"))
     resources = [load(path) for path in paths]
-    require(len(resources) == 5, "기대하는 리소스는 Deployment·Service·Route·ConfigMap 2개의 총 5개입니다.")
+    require(len(resources) == 8, "Deployment, Service, Route, ConfigMap 3개, Secret, PVC의 총 8개가 필요합니다.")
     by_kind = {}
     for resource in resources:
         by_kind.setdefault(resource["kind"], []).append(resource)
@@ -48,7 +48,7 @@ def check():
         require(labels.get("app.kubernetes.io/name") == "arm-lab", "공통 name 라벨 불일치")
         require(labels.get("app.kubernetes.io/part-of") == "robot-arm-twin", "공통 part-of 라벨 불일치")
 
-    require({k: len(v) for k, v in by_kind.items()} == {"ConfigMap": 2, "Deployment": 1, "Route": 1, "Service": 1}, "리소스 종류/개수 불일치")
+    require({k: len(v) for k, v in by_kind.items()} == {"ConfigMap": 3, "Deployment": 1, "Route": 1, "Service": 1, "Secret": 1, "PersistentVolumeClaim": 1}, "리소스 종류/개수 불일치")
     dep, svc, route = (by_kind[k][0] for k in ["Deployment", "Service", "Route"])
     template = dep["spec"]["template"]
     pod_labels = template["metadata"]["labels"]
@@ -73,7 +73,7 @@ def check():
     for probe, path in [("startupProbe", "/healthz"), ("readinessProbe", "/index.html"), ("livenessProbe", "/healthz")]:
         require(container[probe]["httpGet"] == {"path": path, "port": "http"}, f"{probe} 경로/포트 불일치")
         require(container[probe]["timeoutSeconds"] == 2, f"{probe} timeout 확인 필요")
-    require(dep["spec"]["strategy"]["rollingUpdate"] == {"maxSurge": 1, "maxUnavailable": 0}, "롤링 업데이트 설정 불일치")
+    require(dep["spec"]["strategy"] == {"type": "Recreate"}, "RWO PVC용 Recreate 설정 불일치")
     maps = {r["metadata"]["name"]: r for r in by_kind["ConfigMap"]}
     volumes = {v["name"]: v for v in template["spec"]["volumes"]}
     mounted_paths = set()
@@ -83,19 +83,42 @@ def check():
         for item in cm["items"]:
             require(item["key"] in maps[cm["name"]]["data"], "ConfigMap에 필요한 key 없음")
             mounted_paths.add(item["path"])
-    require(mounted_paths == {"index.html", "style.css", "playground.css", "app.js", "config.js"}, "웹 파일 마운트 목록 불일치")
+    require(mounted_paths == {"index.html", "style.css", "playground.css", "app.js", "config.js", "library.js", "library.css"}, "웹 파일 마운트 목록 불일치")
     nginx_ref = volumes["nginx-config"]["configMap"]
     nginx_conf = maps[nginx_ref["name"]]["data"]["nginx.conf"]
     require("listen 8080;" in nginx_conf and "root /opt/app-root/src;" in nginx_conf, "Nginx 포트/웹 루트 불일치")
     require("location = /healthz" in nginx_conf, "생존 확인 경로 없음")
     require(volumes["runtime"]["emptyDir"]["sizeLimit"] == "32Mi", "임시 볼륨 크기 설정 확인 필요")
-    for filename, suffix in [("configmap.yaml", "content"), ("model-configmap.yaml", "model")]:
+    for filename, suffix in [("configmap.yaml", "content"), ("model-configmap.yaml", "model"), ("api-configmap.yaml", "api")]:
         cm = maps[f"arm-lab-202355707-{suffix}"]
         for name, content in cm["data"].items():
-            require(content == (root / "web" / name).read_text(encoding="utf-8"), f"원본과 ConfigMap 불일치: {name}")
+            require(content == (root / ("backend" if suffix == "api" else "web") / name).read_text(encoding="utf-8"), f"원본과 ConfigMap 불일치: {name}")
         digest = sha256((root / "k8s" / filename).read_bytes()).hexdigest()
         require(template["metadata"]["annotations"][f"checksum/{suffix}"] == digest, f"{suffix} 체크섬 불일치. sync-configmap.py를 실행하세요.")
-    print("PASS: YAML 5개 / 리소스 연결 / 자원·Probe·보안 / 전체 웹 파일 / ConfigMap 체크섬")
+    api = template["spec"]["containers"][1]
+    require(len(template["spec"]["containers"]) == 2 and api["name"] == "api", "web/api 컨테이너 구성 불일치")
+    require("@sha256:" in api["image"], "API 이미지 digest 누락")
+    require(api["ports"] == [{"name": "api", "containerPort": 8081}], "API 포트 불일치")
+    require(api["command"] == ["python3", "-B", "/opt/arm-lab/server.py"], "API 실행 명령 불일치")
+    require(api["securityContext"] == container["securityContext"], "API 보안 설정 불일치")
+    require(api["resources"] == container["resources"], "API 자원 설정 불일치")
+    require(dep["spec"]["replicas"] == 1, "SQLite 단일 Pod 구성이 필요합니다.")
+    for probe, endpoint in [("startupProbe", "/api/health"), ("readinessProbe", "/api/health"), ("livenessProbe", "/healthz")]:
+        require(api[probe]["httpGet"] == {"path": endpoint, "port": "api"}, "API Probe 불일치")
+    secret, pvc = (by_kind[k][0] for k in ["Secret", "PersistentVolumeClaim"])
+    require(secret["type"] == "Opaque" and bool(secret["stringData"]["admin-token"]), "관리자 데모 키 누락")
+    require(volumes["admin-auth"]["secret"]["secretName"] == secret["metadata"]["name"], "Secret 참조 불일치")
+    require(volumes["pose-data"]["persistentVolumeClaim"]["claimName"] == pvc["metadata"]["name"], "PVC 참조 불일치")
+    require(pvc["spec"]["accessModes"] == ["ReadWriteOnce"], "PVC 접근 모드 불일치")
+    require(pvc["spec"]["resources"]["requests"]["storage"] == "1Gi", "PVC 용량 불일치")
+    mounts = {m["name"]: m for m in api["volumeMounts"]}
+    require(mounts["pose-data"]["mountPath"] == "/data", "저장소 마운트 불일치")
+    require(mounts["admin-auth"]["readOnly"] and mounts["admin-auth"]["mountPath"] == "/etc/arm-lab-auth", "인증 키 마운트 불일치")
+    require(volumes["api-code"]["configMap"]["name"] in maps, "API ConfigMap 누락")
+    require(mounts["api-code"]["mountPath"] == "/opt/arm-lab" and mounts["api-code"]["readOnly"], "API 코드 마운트 불일치")
+    require("proxy_pass http://127.0.0.1:8081;" in nginx_conf, "Nginx API 연결 누락")
+    require("admin-auth" not in {m["name"] for m in container["volumeMounts"]}, "관리자 키는 웹 루트에 노출하지 않습니다.")
+    print("PASS: YAML 8개 / 리소스 연결 / web와 api 자원, Probe, 보안 / Secret, PVC 마운트 / ConfigMap 체크섬")
     print("로컬 정적 점검입니다. Sandbox 배포 및 삭제 후 재배포 검증은 별도 수행하세요.")
 
 
