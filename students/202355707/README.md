@@ -1,34 +1,34 @@
 # ARM / LAB - 로봇암 디지털 트윈 체험 웹서비스
 
-**학번 202355707 · 지능형 IoT 플랫폼 · 나만의 컨테이너 만들기**
+**학번 202355707 / 지능형 IoT 플랫폼 / 나만의 컨테이너 만들기**
 
-> 초기 버전은 Sandbox에서 HTTPS 접속과 데모 동작을 확인했습니다. 최신 플레이그라운드는 로컬 기능 검증을 마쳤습니다. 최신 YAML 재적용과 삭제 후 재배포, 실제 캡처 등록은 추가 확인이 필요합니다.
+> 2026-10-27 실제 Sandbox의 V.02 웹페이지, Pod Running / Ready=True, ConfigMap 두 개와 Probe 설정을 캡처로 확인했습니다. 삭제 후 YAML만으로 리소스 재생성과 Pod 1/1 Running도 확인했습니다. 재배포 후 브라우저 기능 재확인과 모델 설정 변경 전후 비교는 남아 있습니다.
 
 ## 1. 컨테이너 소개
 
-ARM / LAB은 가상 로봇암의 관절과 목표 위치를 직접 조작하며 움직임의 원리를 배우는 웹서비스입니다. 로봇암·MuJoCo 시뮬레이션에 관심이 있어 이 주제를 선정했습니다. 별도 설치 없이 로봇의 가상 모델을 탐색할 수 있는 체험 공간을 만들었습니다.
+ARM / LAB은 가상 로봇암의 관절과 목표 위치를 직접 조작하며 움직임의 원리를 배우는 웹서비스입니다. 로봇암과 MuJoCo 시뮬레이션에 관심이 있어 이 주제를 선정했습니다. 별도 설치 없이 로봇의 가상 모델을 탐색할 수 있는 체험 공간을 만들었습니다.
 
-이 프로젝트의 디지털 트윈 체험은 가상 모델의 상태를 조작하고 시각화하는 교육용 활동입니다. 실제 장비·센서와의 동기화나 MuJoCo 물리 엔진은 포함하지 않으며 자체 JavaScript 기구학 모델을 사용합니다.
+이 프로젝트의 디지털 트윈 체험은 가상 모델의 상태를 조작하고 시각화하는 교육용 활동입니다. 실제 장비나 센서와 동기화하지 않으며 MuJoCo 물리 엔진도 포함하지 않고 자체 JavaScript 기구학 모델을 사용합니다.
 
 ### 주요 기능
 
 | 체험 | 동작과 확인할 결과 |
 | --- | --- |
-| 관절 조작 | J1 베이스·J2 숄더·J3 엘보 각도를 바꾸면 로봇암과 말단 X/Y/Z 좌표가 갱신됩니다. |
-| 목표 위치 이동 | 좌표 입력·집게 드래그·바닥 클릭으로 역기구학 해를 구합니다. 도달할 수 없는 위치는 안내합니다. |
-| 작은 도전 | A·B·C 목표를 선택하고 말단이 도착하면 완료 상태가 표시됩니다. |
+| 관절 조작 | J1 베이스, J2 숄더, J3 엘보 각도를 바꾸면 로봇암과 말단 X/Y/Z 좌표가 갱신됩니다. |
+| 목표 위치 이동 | 좌표 입력, 집게 드래그, 바닥 클릭으로 역기구학 해를 구합니다. 도달할 수 없는 위치는 안내합니다. |
+| 작은 도전 | A, B, C 목표를 선택하고 말단이 도착하면 완료 상태가 표시됩니다. |
 | 동작 관찰 | 자세 프리셋, 반복 데모, 인사 동작, 이동 궤적과 최근 20초 관절 그래프를 제공합니다. |
-| 화면·상태 조작 | 시점 회전·확대·크게 보기, 색상 변경, 집게 열기·닫기 표현, 상태 JSON 다운로드를 지원합니다. |
+| 화면과 상태 조작 | 시점 회전, 확대, 크게 보기, 색상 변경, 집게가 열리고 닫히는 표현, 상태 JSON 다운로드를 지원합니다. |
 
 ### 모델 범위와 한계
 
 - Y축이 높이인 3 DOF 모델입니다. 단위는 거리 m, 각도 °입니다.
 - 기본 길이는 베이스 0.65 m, 상완 1.8 m, 전완 1.5 m입니다. 이 값은 모델 ConfigMap으로 제공합니다.
-- 관절 범위는 J1 -180°에서 180°, J2 -20°에서 110°, J3 0°에서 150°입니다. 엘보·말단 중심의 바닥 여유 높이는 0.15 m 이상입니다.
+- 관절 범위는 J1 -180°에서 180°, J2 -20°에서 110°, J3 0°에서 150°입니다. 엘보와 말단 중심의 바닥 여유 높이는 0.15 m 이상입니다.
 - 목표 자세로 이동할 때 관절 공간의 smoothstep 보간과 61개 지점의 경로 표본 검사를 사용합니다. 역기구학은 한 가지 굽힘 해만 계산합니다.
 - 집게 드래그는 카메라를 향하는 수직 평면에서 목표를 계산합니다. 바닥 클릭은 선택한 X/Z와 입력창의 Y 높이를 사용합니다.
-- 물체 집기·중력·관성·접촉력·정밀 충돌을 해석하지 않습니다. 집게 열기·표정은 시각 표현이며 목표 완료는 말단과 목표의 거리 0.08 m 미만으로 판정합니다.
-- 상태는 브라우저 메모리에 유지됩니다. 서버 DB·영구 저장·다중 사용자 상태 공유는 포함하지 않습니다.
+- 물체 집기, 중력, 관성, 접촉력, 정밀 충돌을 해석하지 않습니다. 집게 열기와 표정은 시각 표현이며 목표 완료는 말단과 목표의 거리 0.08 m 미만으로 판정합니다.
+- 상태는 브라우저 메모리에 유지됩니다. 서버 DB, 영구 저장, 다중 사용자 상태 공유는 포함하지 않습니다.
 
 ## 2. 아키텍처와 Object 역할
 
@@ -44,29 +44,29 @@ flowchart LR
     P -->|HTML / CSS / JavaScript| U
 ```
 
-컨테이너는 정적 파일을 전달하며 로봇암 계산·그리기·조작 상태 관리는 사용자 브라우저가 담당합니다. 따라서 웹서버 Pod 하나로 구성했습니다.
+컨테이너는 정적 파일을 전달하며 로봇암 계산, 그리기, 조작 상태 관리는 사용자 브라우저가 담당합니다. 따라서 웹서버 Pod 하나로 구성했습니다.
 
-| 리소스·설정 | 이름 또는 위치 | 역할 |
+| 리소스 및 설정 | 이름 또는 위치 | 역할 |
 | --- | --- | --- |
-| Deployment | `arm-lab-202355707` | Pod 1개 유지, 이미지·설정·Probe·자원 선언, 롤링 업데이트 |
+| Deployment | `arm-lab-202355707` | Pod 1개 유지 및 롤링 업데이트, 이미지와 설정, Probe, 자원 선언 |
 | Service | `arm-lab-202355707` | Pod IP 변경과 관계없이 `app` 라벨로 웹서버 연결 |
 | Route | `arm-lab-202355707` | 외부 HTTPS 제공, edge TLS 종료와 HTTP→HTTPS 전환 |
-| Content ConfigMap | `arm-lab-202355707-content` | HTML·CSS·앱 JavaScript·Nginx 설정을 공개 이미지에 주입 |
-| Model ConfigMap | `arm-lab-202355707-model` | 링크 길이·속도·프리셋·이름·기본 색상을 별도 제공 |
+| Content ConfigMap | `arm-lab-202355707-content` | HTML, CSS, 앱 JavaScript, Nginx 설정을 공개 이미지에 주입 |
+| Model ConfigMap | `arm-lab-202355707-model` | 링크 길이, 속도, 프리셋, 이름, 기본 색상을 별도 제공 |
 | Startup Probe | `/healthz`, 2초 간격, 실패 기준 30회 | 기동을 기다린 뒤 나머지 상태 검사를 시작 |
 | Readiness Probe | `/index.html`, 5초 간격 | 웹페이지를 제공할 준비가 된 Pod에 트래픽 전달 |
 | Liveness Probe | `/healthz`, 10초 간격 | 연속 3회 실패 시 컨테이너 재시작 |
 | emptyDir | `/tmp`, 최대 32Mi | 읽기 전용 루트 환경에서 PID와 임시 파일 저장 |
 
-Probe와 emptyDir는 별도 API Object가 아니라 Pod 내부 설정입니다. 두 ConfigMap은 projected volume으로 같은 웹 루트에 합쳐집니다. 데이터베이스나 인증 기능이 없어 PVC·Secret은 사용하지 않았습니다.
+Probe와 emptyDir는 별도 API Object가 아니라 Pod 내부 설정입니다. 두 ConfigMap은 projected volume으로 같은 웹 루트에 합쳐집니다. 데이터베이스나 인증 기능이 없어 PVC나 Secret은 사용하지 않았습니다.
 
-### 연결·자원·보안 설계
+### 연결 구조와 자원, 보안 설계
 
 - `Route.spec.to.name` → Service 이름, Route의 `targetPort: http` → Service의 `name: http`로 연결됩니다.
 - Service의 `selector.app` → Pod의 `labels.app`, Service의 `targetPort: http` → 컨테이너의 `name: http / containerPort: 8080`으로 연결됩니다.
 - requests는 CPU **50m / 메모리 64Mi**, limits는 CPU **250m / 메모리 128Mi**입니다.
 - `maxSurge: 1`, `maxUnavailable: 0`으로 새 Pod가 준비된 후 기존 Pod를 교체합니다. 업데이트 중 최대 2개 Pod의 자원이 필요합니다.
-- 비루트·임의 UID 실행을 고려하여 고정 UID를 지정하지 않았습니다. 권한 상승 금지, capability 제거, RuntimeDefault seccomp, 읽기 전용 루트 파일시스템을 적용했습니다.
+- 비루트 및 임의 UID 실행을 고려하여 고정 UID를 지정하지 않았습니다. 권한 상승 금지, capability 제거, RuntimeDefault seccomp, 읽기 전용 루트 파일시스템을 적용했습니다.
 - `namespace`, Route `host`, Service `clusterIP`, `status`, `uid` 등은 제출 YAML에 고정하지 않았습니다.
 
 ## 3. 사용 이미지
@@ -79,7 +79,7 @@ Probe와 emptyDir는 별도 API Object가 아니라 Pod 내부 설정입니다. 
 | 실행 명령 | `nginx -c /etc/arm-lab/nginx.conf -g 'daemon off;'` |
 | 웹 루트 | `/opt/app-root/src` |
 
-Red Hat UBI 기반 공개 이미지로 정적 웹서비스를 제공하고 비루트·8080 실행 방식으로 OpenShift 환경에 맞췄습니다. 태그가 변경되어도 배포 재현성에 차이가 적도록 Deployment에는 `:1@sha256:...` 형식으로 digest를 고정했습니다. 해당 digest는 2026-10-23 레지스트리 HTTP 200과 linux/amd64·arm64·s390x·ppc64le 목록을 확인했습니다. 최신 고정 이미지 구성의 Sandbox 실행 결과는 별도 검증해야 합니다.
+Red Hat UBI 기반 공개 이미지로 정적 웹서비스를 제공하고 비루트 실행과 8080 포트 사용으로 OpenShift 환경에 맞췄습니다. 태그가 변경되어도 배포 재현성에 차이가 적도록 Deployment에는 `:1@sha256:...` 형식으로 digest를 고정했습니다. 해당 digest는 2026-10-23 레지스트리 HTTP 200과 linux/amd64, arm64, s390x, ppc64le 목록을 확인했습니다. 2026-10-27 실제 Pod의 Running 상태와 이미지 digest가 포함된 설정을 캡처했습니다. 이미지 전체 주소는 제출 YAML에서 확인할 수 있습니다.
 
 ## 4. 저장소 구조와 배포 방법
 
@@ -94,7 +94,7 @@ students/202355707/
 │   └── route.yaml
 ├── web/                    # 웹 파일과 모델 설정 원본
 ├── tools/                  # 생성 및 로컬 정적 점검
-├── docs/verification.md    # 설정 변경·증빙·오류 확인 절차
+├── docs/verification.md    # 설정 변경, 증빙, 오류 확인 절차
 └── images/                 # 실제 배포 캡처와 로컬 미리보기
 ```
 
@@ -111,7 +111,7 @@ oc get all -l app=arm-lab-202355707
 oc get route arm-lab-202355707
 ```
 
-출력된 Route host에 `https://`를 붙여 접속합니다. **Pod Running / READY 1/1**, ARM / LAB의 V.02 표시, 관절 조작·목표 이동·데모 동작을 확인합니다. `/healthz`의 예상 응답은 HTTP 200과 `ok`입니다.
+출력된 Route host에 `https://`를 붙여 접속합니다. **Pod Running / READY 1/1**, ARM / LAB의 V.02 표시, 관절 조작, 목표 이동, 데모 동작을 확인합니다. `/healthz`의 예상 응답은 HTTP 200과 `ok`입니다.
 
 채점에 필요한 웹 파일은 ConfigMap에 포함되어 있습니다. 다른 사람이 배포할 때도 `web/`를 복사하거나 이미지를 빌드하거나 생성 스크립트를 실행할 필요는 없습니다.
 
@@ -146,22 +146,94 @@ oc rollout status deployment/arm-lab-202355707 --timeout=180s
 
 ## 5. 배포 결과와 검증 증빙
 
-| 검증 항목 | 현재 확인 상태 | 증빙 |
-| --- | --- | --- |
-| 초기 버전 리소스 생성 | 콘솔에서 5개 리소스 생성 성공 화면 확인 | 채팅으로 확인, 저장소 캡처 등록 필요 |
-| 초기 버전 HTTPS·데모 | 실제 접속과 데모 동작 확인 | 브라우저 캡처 등록 필요 |
-| 최신 V.02 로컬 기능 | 관절·IK·드래그·바닥 클릭·미션·인사·재생·JSON 확인 | 자동 브라우저 점검, 아래 로컬 미리보기 |
-| 최신 V.02 반응형 | 폭 1600/900/390px에서 가로 넘침·JS 예외 없음 | 자동 브라우저 점검 |
-| 최신 YAML 정적 점검 | 리소스 연결·포트·자원·보안·파일·체크섬 검사 통과 | `python tools/verify-manifests.py` |
-| 최신 Sandbox / READY 1/1 | 추가 확인 필요 | `images/topology.png` 등록 필요 |
-| 최신 실제 HTTPS 화면 | 추가 확인 필요 | `images/sandbox-browser.png` 등록 필요 |
-| 삭제 후 재배포 | 추가 확인 필요 | `images/redeploy.png` 등록 필요 |
-| 모델 설정 변경·Probe | 추가 확인 필요 | [검증 가이드](docs/verification.md)의 비교·캡처 절차 |
+- **확인 일시:** 2026-10-27 14:13~14:48 (Asia/Seoul)
+- **환경:** Red Hat Developer Sandbox / OpenShift, 프로젝트 `nayoung4458-dev`
+- **실제 접속 주소:** [ARM / LAB 웹서비스](https://arm-lab-202355707-nayoung4458-dev.apps.rm3.7wse.p1.openshiftapps.com)
+- **확인 범위:** V.02 실제 페이지 표시, 컨테이너 Running / Ready=True, Service와 Route 연결, ConfigMap 두 개와 Startup, Readiness, Liveness 설정. 정지 영상이므로 모든 인터랙션 실행이나 장애 복구 실험까지 증명하는 것은 아닙니다.
 
-배포 후 검증 일시, Route URL, 실제 캡처와 함께 위 표를 갱신합니다.
+| 검증 항목 | 확인 결과 | 증빙 |
+| --- | --- | --- |
+| 실제 웹서비스 | Route 주소에서 V.02 플레이그라운드와 프로젝트 설명 표시 | 아래 웹페이지 캡처 |
+| Deployment, Service, Route | Pod 1개, RollingUpdate, Service와 HTTPS Route 연결 | Topology와 Deployment 캡처 |
+| Pod와 볼륨 | 컨테이너 Running, 재시작 0회, Ready=True. 웹 파일과 Nginx 설정 읽기 전용 마운트와 /tmp 쓰기 공간 | Pod 상태와 볼륨 캡처 |
+| ConfigMap | content와 model 두 리소스 존재 | ConfigMap 목록 캡처 |
+| Probe와 자원 제한 | /index.html Readiness, /healthz Liveness와 Startup, CPU와 메모리 requests/limits | Probe 캡처 2장 |
+| 로컬 기능 및 정적 YAML | 기존 브라우저 기능 검증과 YAML 연결, 파일, 체크섬 검사 통과 | 로컬 미리보기와 `tools/verify-manifests.py` |
+| 삭제 후 재배포 | YAML 5개 삭제 후 재생성, successfully rolled out, Pod 1/1 Running, 재시작 0회 확인 | 아래 재배포 과정과 상태 조회 캡처 |
+| 재배포 후 브라우저 기능 | 추가 확인 필요 | 실제 Route에서 관절 조작과 데모 재확인 후 기록 |
+| 모델 설정 변경 비교 | 추가 검증 필요 | 수행 후 변경 값과 전후 결과 추가 |
+
+### 실제 웹서비스 실행 화면
+
+주소창과 V.02 체험 화면을 함께 확인할 수 있습니다.
+
+![실제 OpenShift Route에서 실행한 V.02 로봇암 체험 화면](images/sandbox-browser.png)
+
+### OpenShift 배포와 연결
+
+![Topology에서 확인한 Service와 HTTPS Route 연결](images/topology.png)
 
 <details>
-<summary>로컬 화면 미리보기</summary>
+<summary>Deployment의 Pod 수와 업데이트 정책</summary>
+
+![Pod 1개, RollingUpdate 및 최소 준비 시간 설정](images/deployment.png)
+
+</details>
+
+### Pod 정상 상태와 볼륨
+
+![컨테이너 Running / Ready=True 상태, 읽기 전용 설정 파일과 임시 볼륨](images/pod-ready-volumes.png)
+
+### 추가 Object: 두 ConfigMap
+
+![웹 콘텐츠와 모델 설정을 분리한 ConfigMap 두 개](images/configmaps.png)
+
+목록 캡처는 두 ConfigMap의 존재를 보여줍니다. 모델 설정을 바꿔 동작이 달라지는 비교 실험은 별도로 기록합니다.
+
+### Probe와 YAML 설정
+
+<details>
+<summary>Readiness / Liveness, CPU와 메모리, 보안 설정</summary>
+
+![실제 Pod의 Readiness / Liveness 및 requests/limits 설정](images/probes.png)
+
+</details>
+
+<details>
+<summary>Startup Probe와 마운트 및 비루트 보안 설정</summary>
+
+![실제 Pod의 Startup Probe, volumeMounts 및 보안 설정](images/startup-probe.png)
+
+</details>
+
+위 화면은 OpenShift가 생성한 실제 Pod의 설정입니다. 서버가 할당한 UID나 자동 생성 값은 실행 화면에 보일 수 있지만 제출용 YAML에는 복사하지 않습니다.
+
+Sandbox는 사용 시간 정책에 따라 Pod가 0개로 축소될 수 있습니다. 그 경우 Deployment를 1개로 확장하고 Ready 상태가 된 뒤 접속합니다. 이 주소는 촬영 시 확인한 배포 결과이며 항상 실행 중임을 보장하는 주소는 아닙니다.
+
+### 삭제 후 YAML만으로 재배포
+
+2026-10-27 웹 터미널에서 GitHub 저장소를 Clone하고 학번 폴더의 YAML만으로 다음 순서를 수행했습니다.
+
+```bash
+oc delete -f k8s/ --wait=true
+oc apply -f k8s/
+oc rollout status deployment/arm-lab-202355707 --timeout=180s
+oc get pods,deployments,replicasets,services,routes,configmaps -l app=arm-lab-202355707
+oc get route arm-lab-202355707
+```
+
+삭제된 리소스 5개가 다시 생성되고 `successfully rolled out`이 출력됐습니다. 재배포 후 Pod `arm-lab-202355707-bffd89bdf-6zzvd`는 **1/1 Running, 재시작 0회**였으며 Deployment와 ReplicaSet도 준비된 인스턴스 1개를 표시했습니다. Service 8080/TCP, HTTPS edge/Redirect Route, 두 ConfigMap이 다시 생성된 것을 확인했습니다.
+
+![Git Clone부터 YAML 리소스 삭제, 재생성, 배포 완료까지의 과정](images/redeploy.png)
+
+![재배포 후 Pod 1/1 Running과 Service, Route, ConfigMap 조회](images/redeploy-status.png)
+
+`oc get all`은 이 Sandbox에서 권한이 없는 `applications.app.k8s.io`까지 조회해 Forbidden을 반환했습니다. 위처럼 과제 리소스 종류를 명시하여 조회했을 때 정상 출력됐습니다. 이는 추가 리소스 조회 권한 문제였으며 과제 리소스의 생성과 롤아웃은 성공했습니다.
+
+두 캡처는 리소스 재생성과 정상 실행 상태를 증빙합니다. 재배포 이후의 브라우저 조작과 데모 재확인 결과는 확인 후 추가합니다.
+
+<details>
+<summary>로컬 화면 미리보기 - 실제 배포 캡처와 구분</summary>
 
 ![V.02 로컬 브라우저 미리보기](images/local-preview.png)
 
@@ -169,31 +241,33 @@ oc rollout status deployment/arm-lab-202355707 --timeout=180s
 
 ## 6. 설계 과정과 해결한 문제
 
-| 문제·고려 사항 | 적용한 해결 | 확인 범위 |
+| 문제 및 고려 사항 | 적용한 해결 | 확인 범위 |
 | --- | --- | --- |
-| 별도 로봇 프로젝트·센서가 없는 환경 | 자체 기구학 모델과 직접 조작 UI 구성, 구현 범위 명시 | 로컬 기능 검증 |
-| YAML만으로 웹페이지 재현 필요 | 모든 웹 파일과 모델 설정을 ConfigMap에 포함 | 원본·포함 파일·마운트 경로 정적 비교 |
+| 별도 로봇 프로젝트나 센서가 없는 환경 | 자체 기구학 모델과 직접 조작 UI 구성, 구현 범위 명시 | 로컬 기능 검증 |
+| YAML만으로 웹페이지 재현 필요 | 모든 웹 파일과 모델 설정을 ConfigMap에 포함 | 원본, 포함 파일, 마운트 경로 정적 비교 |
 | 설정 변경 후 기존 Pod가 유지될 수 있음 | 생성된 ConfigMap의 해시를 Pod 템플릿에 반영 | 해시 변경과 생성 반복의 동일성 검사 |
-| 비루트 웹서버의 포트·쓰기 권한 | 8080, 읽기 전용 파일, /tmp emptyDir 사용 | 구성 점검, 최신 Sandbox 재검증 필요 |
-| 도달 불가능한 목표·바닥 아래 자세 | 관절 제한·역기구학·바닥 여유 높이 검사와 화면 안내 | 도달·거부 사례 로컬 검증 |
+| 비루트 웹서버의 포트와 쓰기 권한 | 8080, 읽기 전용 파일, /tmp emptyDir 사용 | 실제 Pod의 Running / Ready=True 및 읽기 전용 마운트 캡처 |
+| 도달 불가능한 목표나 바닥 아래 자세 | 관절 제한, 역기구학, 바닥 여유 높이 검사와 화면 안내 | 도달 및 거부 사례 로컬 검증 |
 
-## 7. AI·참고자료 활용 내역
+## 7. AI 및 참고자료 활용 내역
 
-- **OpenAI Codex:** 주제 구체화, 웹 UI·기구학 코드·YAML·문서 초안 작성과 로컬 검증에 활용했습니다.
+- **OpenAI Codex:** 주제 구체화, 웹 UI, 기구학 코드, YAML, 문서 초안 작성과 로컬 검증에 활용했습니다.
 - **과제 안내 PDF:** README 필수 항목, 학번 폴더, YAML 재배포 및 채점 기준을 참고했습니다.
-- **4-1·4-2·5-2 강의:** Deployment·Service·Route 연결, OpenShift 배포, 자원 제한·Probe·ConfigMap을 참고했습니다.
-- [Red Hat UBI Nginx 이미지](https://catalog.redhat.com/en/software/containers/ubi9/nginx-124/657b066b6c1bc124a1d7ff39) · [이미지 공식 사용 설명](https://github.com/sclorg/nginx-container/blob/master/1.24/README.md)
+- **4-1, 4-2, 5-2 강의:** Deployment, Service와 Route 연결, OpenShift 배포, 자원 제한, Probe, ConfigMap을 참고했습니다.
+- [Red Hat UBI Nginx 이미지](https://catalog.redhat.com/en/software/containers/ubi9/nginx-124/657b066b6c1bc124a1d7ff39) / [이미지 공식 사용 설명](https://github.com/sclorg/nginx-container/blob/master/1.24/README.md)
 - [OpenShift 비루트 실행](https://developers.redhat.com/blog/2020/10/26/adapting-docker-and-kubernetes-containers-to-run-on-red-hat-openshift-container-platform)
-- [Kubernetes projected volume](https://kubernetes.io/docs/concepts/storage/projected-volumes/) · [Probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) · [Deployment 업데이트](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) · [이미지 digest](https://kubernetes.io/docs/concepts/containers/images/)
-- [Microduck Sandbox](https://huggingface.co/spaces/pollen-robotics/microduck-simulator): 직접 조작하는 로봇 체험 방향을 참고했습니다. 원본 코드·모델·학습 정책·미디어는 사용하지 않았습니다.
+- [Kubernetes projected volume](https://kubernetes.io/docs/concepts/storage/projected-volumes/) / [Probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) / [Deployment 업데이트](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) / [이미지 digest](https://kubernetes.io/docs/concepts/containers/images/)
+- [Microduck Sandbox](https://huggingface.co/spaces/pollen-robotics/microduck-simulator): 직접 조작하는 로봇 체험 방향을 참고했습니다. 원본 코드, 모델, 학습 정책, 미디어는 사용하지 않았습니다.
 
 ## 8. 제출 전 확인
 
-- [ ] 최신 YAML로 본인 Sandbox 배포, Pod Running / READY 1/1 확인
-- [ ] 실제 HTTPS 화면·Topology 캡처 등록 및 본문 삽입
-- [ ] ConfigMap 설정 변경·Probe 확인 결과 기록
-- [ ] 삭제 후 YAML만으로 재배포 및 접속 확인
+- [x] 본인 Sandbox의 V.02 페이지와 Pod Running / Ready=True 확인
+- [x] 실제 Route 화면, Topology, Pod, ConfigMap, Probe 캡처 등록 및 본문 삽입
+- [x] 두 ConfigMap 존재와 실제 Pod의 Probe 설정 확인
+- [ ] 모델 ConfigMap 설정 변경 전후 비교 결과 기록
+- [x] 삭제 후 YAML만으로 리소스 재배포 및 Pod 1/1 Running 확인
+- [ ] 재배포 후 Route 접속, 관절 조작, 데모 동작 재확인
 - [ ] 모든 YAML 항목을 본인이 설명할 수 있는지 점검
-- [ ] GitHub Commit·Push 후 저장소 URL 제출
+- [ ] GitHub에 Commit과 Push를 마친 뒤 저장소 URL 제출
 
 제출 기한: **2026-10-30 10:00 (Asia/Seoul)**.
