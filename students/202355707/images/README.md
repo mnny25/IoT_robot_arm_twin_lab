@@ -1,25 +1,10 @@
 # 배포 증빙 이미지
 
-> 아래 배포 캡처는 Secret과 PVC를 추가하기 전 V.02 기록입니다. V.03은 Pod 2/2, ConfigMap 3개이며 추가 증빙은 [V.03 검증 가이드](../docs/objects-v03.md)에 따라 촬영한 뒤 등록합니다.
+README에서 사용하는 배포 결과와 실행 화면입니다. 캡처 원본은 보존했습니다.
 
-2026-10-27에 촬영한 원본 캡처를 이름만 정리해 복사했습니다. 원본은 보존했으며 이미지 내용은 편집하지 않았습니다.
-
-| 파일 | 원본 촬영 시각 (Asia/Seoul) | 확인 내용 |
+| 파일 | 촬영 일시 (Asia/Seoul) | 확인 내용 |
 | --- | --- | --- |
-| [sandbox-browser.png](sandbox-browser.png) | 14:19:13 | 실제 Route 주소에서 표시된 V.02 체험 화면 |
-| [topology.png](topology.png) | 14:16:14 | Topology 및 Service와 HTTPS Route의 연결 |
-| [deployment.png](deployment.png) | 14:16:03 | Deployment의 Pod 1개와 RollingUpdate 설정 |
-| [pod-ready-volumes.png](pod-ready-volumes.png) | 14:17:37 | 컨테이너 Running / Ready=True 및 볼륨 마운트 |
-| [configmaps.png](configmaps.png) | 14:20:37 | Content와 Model ConfigMap 두 개 |
-| [probes.png](probes.png) | 14:21:55 | 실제 Pod의 Readiness와 Liveness 및 requests/limits 설정 |
-| [startup-probe.png](startup-probe.png) | 14:21:34 | 실제 Pod의 Startup Probe와 보안, 마운트 설정 |
-| [redeploy.png](redeploy.png) | 14:47:43 | Git Clone 후 YAML 삭제 및 재생성, successfully rolled out 출력 |
-| [redeploy-status.png](redeploy-status.png) | 14:48:42 | 재배포 후 Pod 1/1 Running, Service, Route, ConfigMap 상태 |
+| [deployment-pvc.png](deployment-pvc.png) | 2026-10-27 15:57:21 | YAML 적용과 롤아웃 성공, Pod 2/2 Running, PVC Bound / 1Gi / RWO |
+| [v03-local-preview.png](v03-local-preview.png) | 2026-10-27 | 로컬 Chrome에서 확인한 자세 보관함. OpenShift 배포 증빙과 구분 |
 
-`local-preview.png`는 기존 로컬 미리보기이며 실제 배포 증빙과 구분합니다.
-
-재배포 캡처는 YAML만으로 리소스를 삭제한 뒤 다시 생성하고 Pod가 정상 실행된 것을 보여줍니다. 재배포 후 브라우저 기능 재확인, 모델 설정 변경 전후 비교와 장애 복구 실험은 별도 결과가 필요합니다.
-
-## V.03 로컬 미리보기
-
-[v03-local-preview.png](v03-local-preview.png)는 2026-10-27 로컬 Chrome에서 저장과 불러오기, 인증 삭제를 확인한 통합 화면입니다. OpenShift 배포나 PVC 유지 증빙은 아닙니다.
+실제 Route에서 자세 저장과 불러오기, Secret 인증 결과, Pod 교체 전후 PVC 데이터 유지와 전체 삭제 후 재배포 결과는 확인 후 캡처를 추가합니다.

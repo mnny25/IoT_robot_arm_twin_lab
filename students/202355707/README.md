@@ -2,11 +2,9 @@
 
 **학번 202355707 / 지능형 IoT 플랫폼 / 나만의 컨테이너 만들기**
 
-> V.03은 자세 저장과 불러오기, 관리자 삭제 기능을 추가한 버전입니다. 로컬 HTTP 테스트와 YAML 정적 검사를 수행했습니다. OpenShift에서 새 버전의 배포, PVC 데이터 유지와 Secret 인증 결과는 직접 확인 후 아래 체크리스트에 기록해야 합니다. 기존 캡처는 V.02 배포 기록입니다.
-
 ## 1. 컨테이너 소개
 
-ARM / LAB은 가상 로봇암의 관절과 목표 위치를 직접 조작하며 움직임의 원리를 배우는 웹서비스입니다. 로봇암과 MuJoCo 시뮬레이션에 관심이 있어 이 주제를 골랐습니다. 별도 설치 없이 브라우저에서 기구학을 체험하고, 마음에 드는 자세를 보관함에 저장할 수 있습니다.
+ARM / LAB은 가상 로봇암의 관절과 목표 위치를 직접 조작하며 움직임의 원리를 배우는 웹서비스입니다. 로봇암과 MuJoCo 시뮬레이션에 관심이 있어 이 주제를 골랐습니다. 별도 설치 없이 브라우저에서 기구학을 체험하고 마음에 드는 자세를 보관함에 저장할 수 있습니다.
 
 자체 JavaScript 모델을 사용한 교육용 체험입니다. 실제 로봇이나 센서와 동기화하지 않으며 MuJoCo 물리 엔진, 중력, 관성, 물체 집기나 정밀 충돌 해석은 포함하지 않습니다.
 
@@ -26,7 +24,7 @@ ARM / LAB은 가상 로봇암의 관절과 목표 위치를 직접 조작하며 
 - 목표 이동은 smoothstep 보간과 경로의 61개 지점 검사를 사용합니다. 역기구학은 한 가지 굽힘 해를 계산합니다.
 - 집게 드래그는 카메라를 향하는 수직 평면을 사용합니다. 바닥 클릭은 X/Z와 입력창의 Y 높이를 사용합니다.
 - 집게와 표정은 시각 표현입니다. 목표 완료 기준은 말단과 목표 사이 거리 0.08 m 미만입니다.
-- 실시간 조작 상태는 브라우저 메모리에 있고, 사용자가 저장한 이름과 관절 각도만 서버 SQLite에 기록합니다. 사용자별 계정이나 보관함 분리는 구현하지 않았습니다.
+- 실시간 조작 상태는 브라우저 메모리에 있고 사용자가 저장한 이름과 관절 각도만 서버 SQLite에 기록합니다. 사용자별 계정이나 보관함 분리는 구현하지 않았습니다.
 
 ## 2. 아키텍처와 추가 Object
 
@@ -45,7 +43,7 @@ flowchart LR
     V[PVC: 1Gi] -->|/data| A
 ```
 
-하나의 Pod에 web과 api 컨테이너를 둡니다. Nginx는 정적 파일을 제공하고 `/api/` 요청을 같은 Pod의 API로 전달합니다. 브라우저가 기구학 계산과 그리기를 담당하고, Python API는 SQLite 저장과 삭제 인증을 담당합니다. Service는 Nginx의 8080 포트만 노출합니다.
+하나의 Pod에 web과 api 컨테이너를 둡니다. Nginx는 정적 파일을 제공하고 `/api/` 요청을 같은 Pod의 API로 전달합니다. 브라우저가 기구학 계산과 그리기를 담당하고 Python API는 SQLite 저장과 삭제 인증을 담당합니다. Service는 Nginx의 8080 포트만 노출합니다.
 
 | Object 또는 설정 | 이름 | 역할과 확인 방법 |
 | --- | --- | --- |
@@ -61,7 +59,7 @@ flowchart LR
 
 ### 연결과 운영 설정
 
-- Route의 대상과 Service 이름이 같고, Service의 `targetPort: http`는 web의 `containerPort: 8080`과 연결됩니다.
+- Route의 대상과 Service 이름이 같고 Service의 `targetPort: http`는 web의 `containerPort: 8080`과 연결됩니다.
 - API는 8081에서 동작하며 Secret은 웹 루트에 노출하지 않습니다. 삭제 요청마다 마운트된 키 파일을 읽습니다.
 - web과 api 각각 requests는 CPU 50m / 메모리 64Mi, limits는 CPU 250m / 메모리 128Mi입니다. Pod 합계 requests는 100m / 128Mi, limits는 500m / 256Mi입니다.
 - 고정 UID 없이 비루트 실행, 권한 상승 금지, capability 제거, RuntimeDefault seccomp와 읽기 전용 루트를 적용했습니다. PVC 권한은 OpenShift의 SCC와 볼륨 권한 할당에 따릅니다.
@@ -78,7 +76,7 @@ flowchart LR
 | web | `registry.access.redhat.com/ubi9/nginx-124:1` | 8080 / `nginx -c /etc/arm-lab/nginx.conf -g 'daemon off;'` |
 | api | `registry.access.redhat.com/ubi9/python-312:1` | 8081 / `python3 -B /opt/arm-lab/server.py` |
 
-Deployment에 두 이미지의 digest를 고정했습니다. Nginx는 2026-10-23, Python은 2026-10-27 Red Hat 레지스트리에서 manifest digest를 확인했습니다. Python API는 추가 패키지를 설치하지 않습니다. 실제 컨테이너 실행과 PVC 마운트 확인은 V.03 OpenShift 배포에서 수행해야 합니다.
+Deployment에 두 이미지의 digest를 고정했습니다. Nginx는 2026-10-23, Python은 2026-10-27 Red Hat 레지스트리에서 manifest digest를 확인했습니다. Python API는 추가 패키지를 설치하지 않습니다. OpenShift에서 두 컨테이너의 실행과 PVC의 Bound 상태를 확인했습니다.
 
 ## 4. 저장소 구조와 배포 방법
 
@@ -97,8 +95,7 @@ students/202355707/
 ├── web/                  # 화면과 모델 설정
 ├── backend/server.py     # 저장, 조회와 인증 삭제 API
 ├── tools/                # 생성, 정적 검사, API 테스트와 로컬 실행
-├── docs/objects-v03.md   # 새 버전 배포 및 추가 Object 검증
-└── images/               # 기존 배포 증빙과 새 캡처
+└── images/               # 배포 결과와 실행 화면 캡처
 ```
 
 본인 Sandbox에 로그인하고 `students/202355707`에서 실행합니다. 웹 터미널은 로그인된 계정과 프로젝트를 먼저 확인합니다.
@@ -112,9 +109,9 @@ oc get pods,deployments,services,routes,configmaps,secrets,pvc -l app=arm-lab-20
 oc get route arm-lab-202355707 -o jsonpath='{.spec.host}'
 ```
 
-PVC `Bound`, Pod `2/2 Running`을 확인한 뒤 Route host에 `https://`를 붙여 접속합니다. 예상 화면은 V.03 로봇암 체험과 ‘나의 자세 보관함’입니다. 관절 조작, 데모, 자세 저장과 불러오기를 확인합니다. `/healthz`는 HTTP 200과 `ok`, `/api/health`는 HTTP 200과 `{"status":"ok"}`, `/api/poses`는 `{"poses":[...]}`를 반환합니다.
+PVC `Bound`, Pod `2/2 Running`을 확인한 뒤 Route host에 `https://`를 붙여 접속합니다. 예상 화면은 로봇암 체험과 ‘나의 자세 보관함’입니다. 관절 조작, 데모, 자세 저장과 불러오기를 확인합니다. `/healthz`는 HTTP 200과 `ok`, `/api/health`는 HTTP 200과 `{"status":"ok"}`, `/api/poses`는 `{"poses":[...]}`를 반환합니다.
 
-웹 파일과 API 코드가 ConfigMap에 포함되어 있어, 다른 사람도 이미지 빌드나 원본 복사 없이 YAML만으로 배포할 수 있습니다. 기존 V.02 배포에 적용할 때도 위 `oc apply`를 사용합니다.
+웹 파일과 API 코드가 ConfigMap에 포함되어 있어 다른 사람도 이미지 빌드나 원본 복사 없이 YAML만으로 배포할 수 있습니다.
 
 ### 원본 수정과 로컬 검사
 
@@ -143,133 +140,61 @@ oc get route arm-lab-202355707
 
 ## 5. 배포 결과와 검증
 
-| V.03 검증 | 현재 상태 |
-| --- | --- |
-| YAML 8개, 참조와 체크섬 정적 검사 | 로컬 통과 |
-| 저장, 목록 조회, 인증 거부와 성공, 키 교체 | 로컬 HTTP 테스트 통과 |
-| 브라우저 저장, 불러오기, 인증 삭제와 모바일 레이아웃 | 로컬 Chrome에서 확인, JavaScript 예외 없음 |
-| 같은 DB로 API 재시작 후 자세 유지 | 로컬 테스트 통과. 실제 PVC 유지 시험은 별도 필요 |
-| 잘못된 입력, 동시 저장, 최대 100개 제한 | 로컬 테스트 통과 |
-| OpenShift의 새 이미지 실행, PVC Bound, Pod 2/2 Running | 배포 후 확인 필요 |
-| 실제 Route에서 저장과 불러오기, Secret 인증 | 배포 후 확인 필요 |
-| Pod 교체 후 PVC 데이터 유지 | 배포 후 확인 필요 |
-| YAML 8개 전체 삭제 후 재배포 | 배포 후 확인 필요 |
-
-![V.03 로컬 통합 실행에서 확인한 자세 보관함](images/v03-local-preview.png)
-
-위 이미지는 로컬 미리보기이며 실제 OpenShift 배포 증빙은 아닙니다.
-
-실험 순서와 캡처 목록은 [V.03 검증 가이드](docs/objects-v03.md)에 정리했습니다. 새 캡처는 `images/`에 추가하고 본문에 삽입합니다. 설정 화면만으로 Secret 인증이나 PVC 데이터 유지가 검증되었다고 기록하지 않습니다.
-
-기존 Route: [ARM / LAB 웹서비스](https://arm-lab-202355707-nayoung4458-dev.apps.rm3.7wse.p1.openshiftapps.com). V.03 적용 전에는 V.02 화면일 수 있으며 재배포 후 실제 주소를 확인합니다. Sandbox 정책으로 Pod가 0개가 된 경우 Deployment를 1개로 확장하고 준비 상태를 확인합니다.
-
-<details>
-<summary>이전 V.02 배포와 재배포 증빙 (2026-10-27)</summary>
-
-다음은 Secret과 PVC를 추가하기 전 기록입니다. Pod 1/1, ConfigMap 2개와 RollingUpdate 화면은 당시 구성입니다. V.03 검증 결과를 대신하지 않습니다.
-
-- **확인 일시:** 2026-10-27 14:13~14:48 (Asia/Seoul)
+- **확인 일시:** 2026-10-27 15:57 (Asia/Seoul)
 - **환경:** Red Hat Developer Sandbox / OpenShift, 프로젝트 `nayoung4458-dev`
-- **실제 접속 주소:** [ARM / LAB 웹서비스](https://arm-lab-202355707-nayoung4458-dev.apps.rm3.7wse.p1.openshiftapps.com)
-- **확인 범위:** V.02 실제 페이지 표시, 컨테이너 Running / Ready=True, Service와 Route 연결, ConfigMap 두 개와 Startup, Readiness, Liveness 설정. 정지 영상이므로 모든 인터랙션 실행이나 장애 복구 실험까지 증명하는 것은 아닙니다.
+- **접속 주소:** [ARM / LAB 웹서비스](https://arm-lab-202355707-nayoung4458-dev.apps.rm3.7wse.p1.openshiftapps.com)
 
-| 검증 항목 | 확인 결과 | 증빙 |
-| --- | --- | --- |
-| 실제 웹서비스 | Route 주소에서 V.02 플레이그라운드와 프로젝트 설명 표시 | 아래 웹페이지 캡처 |
-| Deployment, Service, Route | Pod 1개, RollingUpdate, Service와 HTTPS Route 연결 | Topology와 Deployment 캡처 |
-| Pod와 볼륨 | 컨테이너 Running, 재시작 0회, Ready=True. 웹 파일과 Nginx 설정 읽기 전용 마운트와 /tmp 쓰기 공간 | Pod 상태와 볼륨 캡처 |
-| ConfigMap | content와 model 두 리소스 존재 | ConfigMap 목록 캡처 |
-| Probe와 자원 제한 | /index.html Readiness, /healthz Liveness와 Startup, CPU와 메모리 requests/limits | Probe 캡처 2장 |
-| 로컬 기능 및 정적 YAML | 기존 브라우저 기능 검증과 YAML 연결, 파일, 체크섬 검사 통과 | 로컬 미리보기와 `tools/verify-manifests.py` |
-| 삭제 후 재배포 | YAML 5개 삭제 후 재생성, successfully rolled out, Pod 1/1 Running, 재시작 0회 확인 | 아래 재배포 과정과 상태 조회 캡처 |
-| 재배포 후 브라우저 기능 | 추가 확인 필요 | 실제 Route에서 관절 조작과 데모 재확인 후 기록 |
-| 모델 설정 변경 비교 | 추가 검증 필요 | 수행 후 변경 값과 전후 결과 추가 |
+`oc apply -f k8s/` 적용 후 `successfully rolled out`을 확인했습니다. Pod `arm-lab-202355707-646f9b68c6-p7kcv`는 **2/2 Running, 재시작 0회**였으며 PVC `arm-lab-202355707-poses`는 **Bound, 1Gi, RWO, StorageClass gp3**로 표시됐습니다. Secret과 API ConfigMap의 생성도 명령 출력에서 확인했습니다.
 
-### 실제 웹서비스 실행 화면
+![YAML 적용과 롤아웃 성공, Pod 2/2 Running 및 PVC Bound](images/deployment-pvc.png)
 
-주소창과 V.02 체험 화면을 함께 확인할 수 있습니다.
+| 검증 항목 | 확인 결과 |
+| --- | --- |
+| OpenShift 배포 | 컨테이너 2개 Running, Deployment 1/1, PVC Bound 확인 |
+| YAML 정적 검사 | 리소스 8개, 참조, 자원과 보안 설정, ConfigMap 체크섬 검사 통과 |
+| 저장과 인증 API | 로컬 HTTP 테스트에서 저장, 조회, 인증 거부와 성공, 키 교체 확인 |
+| 브라우저 기능 | 로컬 Chrome에서 자세 저장, 불러오기, 인증 삭제와 모바일 레이아웃 확인 |
+| 저장 데이터 유지 | 로컬 API 재시작 후 동일한 자세 조회 확인. 실제 Pod 교체 전후 비교는 별도 확인 필요 |
+| 전체 삭제 후 재배포 | 현재 구성의 YAML 8개로 전체 삭제 및 재배포 확인 필요 |
 
-![실제 OpenShift Route에서 실행한 V.02 로봇암 체험 화면](images/sandbox-browser.png)
+### 자세 보관함 화면
 
-### OpenShift 배포와 연결
+![로컬 통합 실행에서 확인한 자세 보관함](images/v03-local-preview.png)
 
-![Topology에서 확인한 Service와 HTTPS Route 연결](images/topology.png)
+위 보관함 이미지는 로컬 실행 화면입니다. 실제 Route의 보관함 동작, Secret 인증과 Pod 교체 후 데이터 유지 결과는 해당 환경에서 확인한 뒤 기록합니다.
 
-<details>
-<summary>Deployment의 Pod 수와 업데이트 정책</summary>
+### 추가 Object 확인 방법
 
-![Pod 1개, RollingUpdate 및 최소 준비 시간 설정](images/deployment.png)
+**ConfigMap:** `web/config.js`의 `speedDegreesPerSecond`를 45에서 20으로 바꾸고 생성기와 정적 검사 후 적용합니다. 같은 초기 자세에서 같은 프리셋으로 이동하는 시간을 비교합니다. 확인 후 값을 45로 복원하고 다시 생성, 적용합니다. 짧은 이동에는 최소 애니메이션 시간이 있으므로 ‘옮기기’처럼 큰 각도 변화를 사용합니다.
 
-</details>
+**Secret:** 보관함에 자세를 저장하고 ‘관리자 삭제’에 잘못된 키를 넣어 삭제합니다. 오류와 자세 유지를 확인한 뒤 공개 데모 키 `arm-lab-demo-202355707`로 다시 삭제합니다. 예상 결과는 인증 실패 HTTP 401, 삭제 성공 HTTP 200입니다.
 
-### Pod 정상 상태와 볼륨
-
-![컨테이너 Running / Ready=True 상태, 읽기 전용 설정 파일과 임시 볼륨](images/pod-ready-volumes.png)
-
-### 추가 Object: 두 ConfigMap
-
-![웹 콘텐츠와 모델 설정을 분리한 ConfigMap 두 개](images/configmaps.png)
-
-목록 캡처는 두 ConfigMap의 존재를 보여줍니다. 모델 설정을 바꿔 동작이 달라지는 비교 실험은 별도로 기록합니다.
-
-### Probe와 YAML 설정
-
-<details>
-<summary>Readiness / Liveness, CPU와 메모리, 보안 설정</summary>
-
-![실제 Pod의 Readiness / Liveness 및 requests/limits 설정](images/probes.png)
-
-</details>
-
-<details>
-<summary>Startup Probe와 마운트 및 비루트 보안 설정</summary>
-
-![실제 Pod의 Startup Probe, volumeMounts 및 보안 설정](images/startup-probe.png)
-
-</details>
-
-위 화면은 OpenShift가 생성한 실제 Pod의 설정입니다. 서버가 할당한 UID나 자동 생성 값은 실행 화면에 보일 수 있지만 제출용 YAML에는 복사하지 않습니다.
-
-Sandbox는 사용 시간 정책에 따라 Pod가 0개로 축소될 수 있습니다. 그 경우 Deployment를 1개로 확장하고 Ready 상태가 된 뒤 접속합니다. 이 주소는 촬영 시 확인한 배포 결과이며 항상 실행 중임을 보장하는 주소는 아닙니다.
-
-### 삭제 후 YAML만으로 재배포
-
-2026-10-27 웹 터미널에서 GitHub 저장소를 Clone하고 학번 폴더의 YAML만으로 다음 순서를 수행했습니다.
+**PVC:** ‘PVC 유지 확인’ 자세를 저장하고 이름과 관절 각도를 기록합니다. PVC를 유지한 채 다음 명령으로 Pod만 교체합니다.
 
 ```bash
-oc delete -f k8s/ --wait=true
-oc apply -f k8s/
-oc rollout status deployment/arm-lab-202355707 --timeout=180s
-oc get pods,deployments,replicasets,services,routes,configmaps -l app=arm-lab-202355707
-oc get route arm-lab-202355707
+oc rollout restart deployment/arm-lab-202355707
+oc rollout status deployment/arm-lab-202355707 --timeout=300s
+oc get pods,pvc -l app=arm-lab-202355707
 ```
 
-삭제된 리소스 5개가 다시 생성되고 `successfully rolled out`이 출력됐습니다. 재배포 후 Pod `arm-lab-202355707-bffd89bdf-6zzvd`는 **1/1 Running, 재시작 0회**였으며 Deployment와 ReplicaSet도 준비된 인스턴스 1개를 표시했습니다. Service 8080/TCP, HTTPS edge/Redirect Route, 두 ConfigMap이 다시 생성된 것을 확인했습니다.
+새 Pod가 `2/2 Running`이 되면 브라우저에서 보관함을 새로고침합니다. 같은 자세가 남아 있고 불러오기가 동작하는지 확인합니다. 전체 리소스 삭제 시험과 달리 이 단계에서는 PVC를 삭제하지 않습니다.
 
-![Git Clone부터 YAML 리소스 삭제, 재생성, 배포 완료까지의 과정](images/redeploy.png)
+추가 증빙에는 실제 HTTPS 주소와 보관함 화면, 인증 거부와 삭제 성공, Pod 교체 전후 이름과 같은 자세, 전체 삭제 후 재배포 결과를 캡처해 `images/`에 저장합니다.
 
-![재배포 후 Pod 1/1 Running과 Service, Route, ConfigMap 조회](images/redeploy-status.png)
+Sandbox 정책으로 Pod가 0개로 축소되면 다음 명령으로 다시 실행하고 준비 상태를 확인합니다.
 
-`oc get all`은 이 Sandbox에서 권한이 없는 `applications.app.k8s.io`까지 조회해 Forbidden을 반환했습니다. 위처럼 과제 리소스 종류를 명시하여 조회했을 때 정상 출력됐습니다. 이는 추가 리소스 조회 권한 문제였으며 과제 리소스의 생성과 롤아웃은 성공했습니다.
+```bash
+oc scale deployment/arm-lab-202355707 --replicas=1
+oc rollout status deployment/arm-lab-202355707 --timeout=300s
+```
 
-두 캡처는 리소스 재생성과 정상 실행 상태를 증빙합니다. 재배포 이후의 브라우저 조작과 데모 재확인 결과는 확인 후 추가합니다.
-
-<details>
-<summary>로컬 화면 미리보기 - 실제 배포 캡처와 구분</summary>
-
-![V.02 로컬 브라우저 미리보기](images/local-preview.png)
-
-</details>
-
-</details>
-
-## 6. 설계 과정과 확인할 점
+## 6. 설계 과정과 해결 방법
 
 | 문제 | 적용한 방법 | 검증 |
 | --- | --- | --- |
 | 새 Pod에서 저장한 자세를 다시 읽어야 함 | SQLite 파일을 PVC의 /data에 저장 | 로컬 API 재시작 통과, 실제 Pod 교체 시험 필요 |
 | 공개 저장 기능과 관리자 삭제 구분 | Secret 파일과 Bearer 인증, hmac.compare_digest로 키 비교 | 인증 실패와 성공, 키 교체 로컬 통과 |
-| RWO 볼륨을 사용하는 Pod 업데이트 | replicas 1 및 Recreate | 실제 클러스터 교체 확인 필요 |
+| RWO 볼륨을 사용하는 Pod 업데이트 | replicas 1 및 Recreate | OpenShift 적용 후 Pod 2/2 Running 확인 |
 | YAML만으로 코드까지 재현 | ConfigMap 3개에 모든 소스 포함, 체크섬으로 Pod 교체 | 정적 참조 검사 통과 |
 | 기존 로봇암 체험과 저장 UI 연결 | 현재 각도 복사, 불러올 때 기존 경로 검사 사용 | 기존 바닥 및 관절 범위 검사를 유지 |
 
@@ -286,17 +211,16 @@ oc get route arm-lab-202355707
 - [Red Hat UBI Python 3.12](https://catalog.redhat.com/software/containers/ubi9/python-312/657b08d023df896ebfacf402)
 - [Kubernetes Secret](https://kubernetes.io/docs/concepts/configuration/secret/), [PersistentVolumeClaim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
 
-## 8. 제출 전 확인
+## 8. 오류 확인
 
-- [x] V.02 실제 배포와 YAML 삭제 후 재배포 증빙 등록
-- [x] V.03 원본과 YAML 동기화, 정적 연결 검사 및 로컬 API 테스트
-- [ ] 모델 ConfigMap 변경 전후 비교 기록
-- [ ] V.03 PVC Bound, Pod 2/2 Running 및 실제 Route 화면 캡처
-- [ ] Secret 인증 거부와 성공 결과 기록
-- [ ] Pod 교체 전후 같은 자세가 유지되는지 확인
-- [ ] YAML 8개 전체 삭제 후 재배포와 브라우저 기능 재확인
-- [ ] 새 캡처를 images/에 넣고 README에 삽입
-- [ ] 모든 Object와 설정을 본인이 설명할 수 있는지 점검
-- [ ] GitHub Commit과 Push 후 저장소 URL 제출
+```bash
+oc describe deployment arm-lab-202355707
+oc describe pvc arm-lab-202355707-poses
+oc logs deployment/arm-lab-202355707 -c web --tail=100
+oc logs deployment/arm-lab-202355707 -c api --tail=100
+oc get events --sort-by=.metadata.creationTimestamp
+```
+
+PVC가 Pending이면 기본 StorageClass와 스토리지 할당량, 이벤트를 확인합니다. ImagePullBackOff는 이미지 주소와 레지스트리 접근을, API 실행 오류는 PVC 쓰기 권한과 Secret 마운트를 확인합니다. `oc get all`의 다른 API 조회 권한 오류는 과제 리소스 종류를 명시한 조회 명령으로 확인합니다.
 
 제출 기한: **2026-10-30 10:00 (Asia/Seoul)**.
