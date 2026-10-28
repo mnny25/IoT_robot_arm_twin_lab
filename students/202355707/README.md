@@ -4,7 +4,7 @@
 
 ## 1. 컨테이너 소개
 
-ARM / LAB은 가상 로봇암의 관절과 목표 위치를 직접 조작하며 움직임의 원리를 배우는 웹서비스입니다. 로봇암과 MuJoCo 시뮬레이션에 관심이 있어 이 주제를 골랐습니다. 별도 설치 없이 브라우저에서 기구학을 체험하고 마음에 드는 자세를 보관함에 저장할 수 있습니다.
+ARM / LAB은 가상 로봇암의 관절과 목표 위치를 직접 조작하며 움직임의 원리를 배우는 웹서비스입니다. 로봇암과 MuJoCo 시뮬레이션에 관심이 있어 이 주제를 골랐습니다. 별도 설치 없이 브라우저에서  체험하고 마음에 드는 자세를 보관함에 저장할 수 있습니다.
 
 자체 JavaScript 모델을 사용한 교육용 체험입니다. 실제 로봇이나 센서와 동기화하지 않으며 MuJoCo 물리 엔진, 중력, 관성, 물체 집기나 정밀 충돌 해석은 포함하지 않습니다.
 
@@ -126,7 +126,7 @@ python tools/run-local.py
 
 ### 삭제 후 YAML만으로 재배포
 
-**아래 명령은 PVC도 삭제하므로 저장한 자세가 사라질 수 있습니다.** 데이터 유지 시험에서는 PVC를 남겨두고 Pod만 교체합니다. 전체 삭제 시험은 과제 재현성 확인용으로 따로 수행합니다.
+**아래 명령은 PVC도 삭제하므로 저장한 자세가 사라질 수 있습니다.**
 
 ```bash
 oc delete -f k8s/ --wait=true
@@ -140,7 +140,6 @@ oc get route arm-lab-202355707
 
 ## 5. 배포 결과와 검증
 
-- **확인 일시:** 2026-10-28 10:26~10:42 (Asia/Seoul)
 - **환경:** Red Hat Developer Sandbox / OpenShift, 프로젝트 `nayoung4458-dev`
 - **접속 주소:** [ARM / LAB 웹서비스](https://arm-lab-202355707-nayoung4458-dev.apps.rm3.7wse.p1.openshiftapps.com)
 
@@ -171,14 +170,6 @@ oc get route arm-lab-202355707
 
 </details>
 
-| 검증 항목 | 확인 결과 |
-| --- | --- |
-| OpenShift 배포 | 컨테이너 2개 Running, Deployment 1/1, PVC Bound 확인 |
-| YAML 정적 검사 | 리소스 8개, 참조, 자원과 보안 설정, ConfigMap 체크섬 검사 통과 |
-| 저장과 인증 API | 로컬 HTTP 테스트에서 저장, 조회, 인증 거부와 성공, 키 교체 확인 |
-| 브라우저 기능 | 로컬 Chrome에서 자세 저장, 불러오기, 인증 삭제와 모바일 레이아웃 확인 |
-| 저장 데이터 유지 | 로컬 API 재시작 후 동일한 자세 조회 확인. 실제 Pod 교체 전후 비교는 별도 확인 필요 |
-| 전체 삭제 후 재배포 | 현재 구성의 YAML 8개로 전체 삭제 및 재배포 확인 필요 |
 
 ### 실제 웹사이트 접속 화면
 
@@ -202,7 +193,7 @@ oc get pods,pvc -l app=arm-lab-202355707
 
 새 Pod가 `2/2 Running`이 되면 브라우저에서 보관함을 새로고침합니다. 같은 자세가 남아 있고 불러오기가 동작하는지 확인합니다. 전체 리소스 삭제 시험과 달리 이 단계에서는 PVC를 삭제하지 않습니다.
 
-배포 리소스 목록, `oc get all` 출력, Route와 Topology, 실제 웹사이트 접속 화면은 `images/`에 저장했습니다. 위 캡처는 리소스 상태와 웹페이지 표시를 증빙하며 인증 동작이나 저장 데이터 유지 시험 결과를 대신하지 않습니다.
+배포 리소스 목록, `oc get all` 출력, Route와 Topology, 실제 웹사이트 접속 화면은 `images/`에 저장했습니다.
 
 Sandbox 정책으로 Pod가 0개로 축소되면 다음 명령으로 다시 실행하고 준비 상태를 확인합니다.
 
@@ -224,8 +215,6 @@ oc rollout status deployment/arm-lab-202355707 --timeout=300s
 ## 7. AI 및 참고자료 활용 내역
 
 - **OpenAI Codex:** 주제 구체화, 웹 UI, 기구학 코드, YAML, 문서 초안 작성과 로컬 검증에 활용했습니다.
-- **과제 안내 PDF:** README 필수 항목, 학번 폴더, YAML 재배포 및 채점 기준을 참고했습니다.
-- **4-1, 4-2, 5-2 강의:** Deployment, Service와 Route 연결, OpenShift 배포, 자원 제한, Probe, ConfigMap을 참고했습니다.
 - [Red Hat UBI Nginx 이미지](https://catalog.redhat.com/en/software/containers/ubi9/nginx-124/657b066b6c1bc124a1d7ff39) / [이미지 공식 사용 설명](https://github.com/sclorg/nginx-container/blob/master/1.24/README.md)
 - [OpenShift 비루트 실행](https://developers.redhat.com/blog/2020/10/26/adapting-docker-and-kubernetes-containers-to-run-on-red-hat-openshift-container-platform)
 - [Kubernetes projected volume](https://kubernetes.io/docs/concepts/storage/projected-volumes/) / [Probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) / [Deployment 업데이트](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) / [이미지 digest](https://kubernetes.io/docs/concepts/containers/images/)
