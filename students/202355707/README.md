@@ -245,5 +245,3 @@ oc get events --sort-by=.metadata.creationTimestamp
 ```
 
 PVC가 Pending이면 기본 StorageClass와 스토리지 할당량, 이벤트를 확인합니다. ImagePullBackOff는 이미지 주소와 레지스트리 접근을, API 실행 오류는 PVC 쓰기 권한과 Secret 마운트를 확인합니다. `oc get all`의 다른 API 조회 권한 오류는 과제 리소스 종류를 명시한 조회 명령으로 확인합니다.
-
-제출 기한: **2026-10-30 10:00 (Asia/Seoul)**.
