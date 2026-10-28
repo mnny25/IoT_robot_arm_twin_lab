@@ -140,13 +140,36 @@ oc get route arm-lab-202355707
 
 ## 5. 배포 결과와 검증
 
-- **확인 일시:** 2026-10-27 15:57 (Asia/Seoul)
+- **확인 일시:** 2026-10-28 10:26~10:42 (Asia/Seoul)
 - **환경:** Red Hat Developer Sandbox / OpenShift, 프로젝트 `nayoung4458-dev`
 - **접속 주소:** [ARM / LAB 웹서비스](https://arm-lab-202355707-nayoung4458-dev.apps.rm3.7wse.p1.openshiftapps.com)
 
-`oc apply -f k8s/` 적용 후 `successfully rolled out`을 확인했습니다. Pod `arm-lab-202355707-646f9b68c6-p7kcv`는 **2/2 Running, 재시작 0회**였으며 PVC `arm-lab-202355707-poses`는 **Bound, 1Gi, RWO, StorageClass gp3**로 표시됐습니다. Secret과 API ConfigMap의 생성도 명령 출력에서 확인했습니다.
+리소스 조회에서 Pod `arm-lab-202355707-646f9b68c6-rxb82`의 **2/2 Running, 재시작 0회**, Deployment의 **1/1** 상태를 확인했습니다. ConfigMap 3개와 Secret이 존재하며 PVC `arm-lab-202355707-poses`는 **Bound, 1Gi, RWO, StorageClass gp3**로 표시됐습니다. 실제 Route 주소에서 로봇암 체험 화면이 표시되는 것도 확인했습니다.
 
-![YAML 적용과 롤아웃 성공, Pod 2/2 Running 및 PVC Bound](images/deployment-pvc.png)
+![Pod, Deployment, Service, Route와 ConfigMap, Secret, PVC 조회 결과](images/resources.png)
+
+![OpenShift Topology의 로봇암 서비스와 Pod 1개](images/topology.png)
+
+### Route 연결
+
+`oc get route arm-lab-202355707` 출력에서 과제 Service로 연결되는 Route와 `edge/Redirect` 설정을 확인했습니다.
+
+![과제 Route의 host, 대상 Service와 TLS 설정](images/route.png)
+
+<details>
+<summary>oc get all 출력</summary>
+
+아래 3장은 프로젝트 전체의 `oc get all` 출력을 순서대로 캡처한 것입니다. 과제 외 실습 리소스도 함께 표시됩니다. 로봇암 서비스의 Pod는 `2/2 Running`, Deployment는 `1/1`이며 현재 ReplicaSet의 준비된 Pod 수는 1개입니다.
+
+![oc get all의 Pod, Service와 Deployment 목록](images/ocgetall_1.png)
+
+![oc get all의 ReplicaSet, BuildConfig와 Build 목록](images/ocgetall_2.png)
+
+![oc get all의 ImageStream, Route 목록과 추가 API 조회 권한 오류](images/ocgetall_3.png)
+
+마지막 `applications.app.k8s.io`의 Forbidden은 해당 API의 리소스 목록을 조회할 권한이 없어 발생했습니다. 과제 리소스의 상태는 위 `resources.png`처럼 종류와 app 라벨을 지정한 조회 결과로 확인했습니다. 출력에 보이는 이전 ReplicaSet이나 실습용 Deployment의 0개 표시는 현재 과제 Pod의 실행 상태와 구분합니다.
+
+</details>
 
 | 검증 항목 | 확인 결과 |
 | --- | --- |
@@ -157,11 +180,11 @@ oc get route arm-lab-202355707
 | 저장 데이터 유지 | 로컬 API 재시작 후 동일한 자세 조회 확인. 실제 Pod 교체 전후 비교는 별도 확인 필요 |
 | 전체 삭제 후 재배포 | 현재 구성의 YAML 8개로 전체 삭제 및 재배포 확인 필요 |
 
-### 자세 보관함 화면
+### 실제 웹사이트 접속 화면
 
-![로컬 통합 실행에서 확인한 자세 보관함](images/v03-local-preview.png)
+![실제 Route 주소에서 실행 중인 로봇암 체험 웹페이지](images/browser.png)
 
-위 보관함 이미지는 로컬 실행 화면입니다. 실제 Route의 보관함 동작, Secret 인증과 Pod 교체 후 데이터 유지 결과는 해당 환경에서 확인한 뒤 기록합니다.
+주소창과 로봇암 체험 화면이 함께 보이는 실제 배포 캡처입니다. 자세 보관함의 저장과 불러오기, Secret 인증과 Pod 교체 후 데이터 유지 결과는 별도로 확인합니다.
 
 ### 추가 Object 확인 방법
 
@@ -179,7 +202,7 @@ oc get pods,pvc -l app=arm-lab-202355707
 
 새 Pod가 `2/2 Running`이 되면 브라우저에서 보관함을 새로고침합니다. 같은 자세가 남아 있고 불러오기가 동작하는지 확인합니다. 전체 리소스 삭제 시험과 달리 이 단계에서는 PVC를 삭제하지 않습니다.
 
-추가 증빙에는 실제 HTTPS 주소와 보관함 화면, 인증 거부와 삭제 성공, Pod 교체 전후 이름과 같은 자세, 전체 삭제 후 재배포 결과를 캡처해 `images/`에 저장합니다.
+배포 리소스 목록, `oc get all` 출력, Route와 Topology, 실제 웹사이트 접속 화면은 `images/`에 저장했습니다. 위 캡처는 리소스 상태와 웹페이지 표시를 증빙하며 인증 동작이나 저장 데이터 유지 시험 결과를 대신하지 않습니다.
 
 Sandbox 정책으로 Pod가 0개로 축소되면 다음 명령으로 다시 실행하고 준비 상태를 확인합니다.
 
