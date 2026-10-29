@@ -12,7 +12,6 @@
 | [redeploy-commands.png](redeploy-commands.png) | 16:48:32 | oc delete -f k8s/ --wait=true 후 oc apply -f k8s/ 실행. 리소스 8개 deleted / created |
 | [redeploy-resources.png](redeploy-resources.png) | 16:51:11 | 재배포 후 Pod 2/2 Running, Deployment 1/1, ConfigMap 3개, Secret, PVC Bound / 1Gi / RWO / gp3와 Route 설정 |
 
-시각은 원본 스크린샷 파일명 기준입니다. 원본 이미지를 편집하지 않고 내용을 나타내는 이름으로 복사했습니다. PVC 유지 시험은 전체 삭제 전에 수행했으며, 재배포 단계에서는 PVC도 삭제·재생성했습니다. 재배포 이후의 브라우저 화면과 실제 Route에서의 삭제 인증 결과는 이 캡처 묶음에 포함되어 있지 않습니다.
 
 ## 초기 배포 기록
 
