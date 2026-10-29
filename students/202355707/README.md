@@ -57,6 +57,41 @@ flowchart LR
 | Probe | 두 컨테이너의 Startup / Readiness / Liveness | 기동, 준비 상태와 생존 상태 검사. 별도 API Object가 아닌 컨테이너 설정 |
 | emptyDir | `runtime` | Nginx의 `/tmp` 임시 파일. 영구 저장은 PVC가 담당 |
 
+### 추가 Object 활용
+
+로봇암 체험 화면과 모델 설정을 제공하기 위해 ConfigMap을, 자세 보관함의 삭제 인증과 데이터 유지를 위해 Secret과 PVC를 사용했습니다. 두 컨테이너의 상태 확인에는 Probe를 적용했습니다. Probe는 과제의 추가 활용 항목에 해당하지만 독립된 API Object가 아니라 Deployment 내부의 컨테이너 설정입니다.
+
+#### ConfigMap — 화면·모델 설정·API 코드 제공
+
+- **사용 목적:** 공개 이미지를 그대로 사용하면서 로봇암 웹서비스의 화면, 기구학 설정과 저장 API를 주입해 YAML만으로 서비스를 재현합니다.
+- **적용 방식:** `configmap.yaml`은 HTML·CSS·JavaScript와 Nginx 설정을, `model-configmap.yaml`은 링크 길이, 이동 속도, 프리셋을 담은 `config.js`를 제공합니다. `api-configmap.yaml`은 Python 서버 코드를 API 컨테이너에 마운트합니다. 생성 도구가 Deployment의 체크섬도 갱신하여 변경 적용 시 Pod가 교체되도록 했습니다.
+- **검증 결과:** 원본 파일, ConfigMap 내용, 체크섬의 일치 검사를 통과했습니다. 실제 배포에서 ConfigMap 3개가 생성됐고 전체 삭제 후 YAML만으로 재배포한 Pod가 `2/2 Running`임을 확인했습니다. 이동 속도 변경 전후 비교는 아래의 추가 확인 절차로 안내합니다.
+
+#### Secret — 자세 삭제용 관리자 키
+
+- **사용 목적:** 누구나 자세를 저장·조회할 수 있게 하되 삭제 요청은 관리자 키로 인증합니다.
+- **적용 방식:** `secret.yaml`의 `admin-token`을 API 컨테이너의 `/etc/arm-lab-auth`에 읽기 전용으로 마운트합니다. 서버는 삭제 요청마다 키 파일을 읽어 Bearer 인증 값과 비교합니다. 키는 web 컨테이너에 마운트하지 않습니다. 제출본에는 재현을 위한 공개 데모 키를 사용했습니다.
+- **검증 결과:** 실제 배포에서 Secret 생성과 참조를 확인했습니다. 로컬 API 테스트에서 잘못된 키의 HTTP 401, 올바른 키의 삭제 성공 HTTP 200, 키 교체 후 이전 키 거부를 확인했습니다.
+
+#### PVC — 저장한 자세의 영구 보관
+
+- **사용 목적:** Pod가 교체되어도 사용자가 저장한 자세 이름과 관절 각도를 유지합니다.
+- **적용 방식:** `pvc.yaml`에서 `ReadWriteOnce`, `1Gi`를 요청하고 API 컨테이너의 `/data`에 연결합니다. SQLite는 `/data/poses.sqlite3`에 저장합니다. 단일 Pod와 `Recreate` 전략을 사용해 업데이트 시 기존 Pod가 종료된 후 새 Pod가 볼륨을 사용하게 했습니다.
+- **검증 결과:** PVC의 `Bound` 상태를 확인했습니다. 실제 Pod 교체 전후에 동일한 볼륨이 유지됐고 ‘PVC 유지 확인’ 자세의 이름과 J1 20.4°·J2 59.3°·J3 1.7°가 남아 불러오기도 성공했습니다. 전후 화면과 터미널 기록은 5장의 ‘PVC 유지와 저장한 자세 불러오기’에 정리했습니다.
+
+#### Probe — 기동·준비·생존 상태 확인
+
+- **사용 목적:** 웹 화면과 저장 API가 준비된 뒤 요청을 받고 응답하지 않는 컨테이너를 재시작하도록 합니다.
+- **적용 방식:** `deployment.yaml`의 web(8080)과 api(8081)에 아래 HTTP Probe를 각각 설정했습니다. 모든 요청의 제한 시간은 2초입니다.
+
+| 종류 | web 검사 경로 | api 검사 경로 | 주기 / 연속 실패 기준 | 동작 |
+| --- | --- | --- | --- | --- |
+| Startup | `/healthz` | `/api/health` | 2초 / 30회 | 기동 확인. 성공 전에는 나머지 Probe를 시작하지 않으며 실패 한도에 도달하면 컨테이너 재시작 |
+| Readiness | `/index.html` | `/api/health` | 5초 / 3회 | 준비 상태 확인. 실패 시 Pod를 Service의 정상 트래픽 대상에서 제외 |
+| Liveness | `/healthz` | `/healthz` | 10초 / 3회 | 생존 상태 확인. 실패 시 해당 컨테이너 재시작 |
+
+- **검증 결과:** 설정, 경로의 정적 검사를 통과했고 실제 배포의 `2/2` 표시로 두 컨테이너의 준비 상태를 확인했습니다. web은 첫 화면 제공 여부를, api의 `/api/health`는 SQLite 조회 가능 여부까지 검사합니다. api의 Liveness는 DB 조회 없이 HTTP 서버 응답만 확인합니다.
+
 ### 연결과 운영 설정
 
 - Route의 대상과 Service 이름이 같고 Service의 `targetPort: http`는 web의 `containerPort: 8080`과 연결됩니다.
@@ -112,7 +147,7 @@ oc get pods,deployments,services,routes,configmaps,secrets,pvc -l app=arm-lab-20
 oc get route arm-lab-202355707 -o jsonpath='{.spec.host}'
 ```
 
-PVC `Bound`, Pod `2/2 Running`을 확인한 뒤 Route host에 접속합니다. 
+PVC `Bound`, Pod `2/2 Running`을 확인한 뒤 Route host에 접속합니다.
 Route Host : `https://arm-lab-202355707-nayoung4458-dev.apps.rm3.7wse.p1.openshiftapps.com/`
 
 관절 조작, 데모, 자세 저장과 불러오기를 확인합니다. `/healthz`는 HTTP 200과 `ok`, `/api/health`는 HTTP 200과 `{"status":"ok"}`, `/api/poses`는 `{"poses":[...]}`를 반환합니다.
@@ -145,7 +180,7 @@ oc get route arm-lab-202355707
 
 ![YAML 8개에 해당하는 리소스 전체 삭제와 재생성 결과](images/redeploy-commands.png)
 
-새 Pod `arm-lab-202355707-646f9b68c6-tp47v`의 **2/2 Running, 재시작 0회**, Deployment의 **1/1** 상태를 확인했습니다. Service는 **8080/TCP**, ConfigMap은 **3개**, Secret은 **1개**이며 PVC는 **Bound, 1Gi, RWO, StorageClass gp3**입니다. 함께 생성된 리소스의 AGE는 약 3분으로 표시됩니다. Route의 대상 Service와 `http` 포트, `edge/Redirect` 설정도 확인했습니다.
+새 Pod `arm-lab-202355707-646f9b68c6-tp47v`의 2/2 Running, 재시작 0회, Deployment의 1/1 상태를 확인했습니다. Service는 8080/TCP, ConfigMap은 3개, Secret은 1개이며 PVC는 Bound, 1Gi, RWO, StorageClass gp3입니다. 함께 생성된 리소스의 AGE는 약 3분으로 표시됩니다. Route의 대상 Service와 `http` 포트, `edge/Redirect` 설정도 확인했습니다.
 
 ![전체 재배포 후 Pod, Deployment, Service, Route, ConfigMap, Secret과 PVC 상태](images/redeploy-resources.png)
 
@@ -160,7 +195,7 @@ oc get route arm-lab-202355707
 | 16:41 | ‘PVC 유지 확인’ 자세 저장. 표시 각도 J1 20.4°, J2 59.3°, J3 1.7° |
 | 16:43 | `oc rollout restart` 및 rollout 성공. Pod가 `646f9b68c6-rxb82`에서 `5c959b4965-pmtfv`로 교체되고 새 Pod가 2/2 Running |
 | 16:43 | 교체 전후 PVC가 같은 볼륨 `pvc-9a1d56f3-0f11-4bae-8a1f-aa2be3e1c0b9`에 Bound 상태 유지 |
-| 16:45 | 같은 이름과 각도의 자세가 보관함에 남아 있고, 불러오기 후 해당 자세와 ‘목표 도달’ 표시 확인 |
+| 16:45 | 같은 이름과 각도의 자세가 보관함에 남아 있고 불러오기 후 해당 자세와 ‘목표 도달’ 표시 확인 |
 
 ![Pod 교체 전 PVC 유지 확인 자세 저장 화면](images/pvc-before-restart.png)
 
@@ -174,7 +209,7 @@ oc get route arm-lab-202355707
 
 ![실제 Route 주소에서 실행 중인 로봇암 체험 웹페이지](images/browser.png)
 
-주소창과 로봇암 체험 화면이 함께 보이는 초기 배포 캡처입니다. 보관함 저장과 Pod 교체 후 불러오기는 위의 PVC 시험 화면에서 확인할 수 있습니다. Secret 인증의 실패·성공 및 키 교체는 로컬 API 테스트를 통과했으며, 이번 캡처에는 실제 Route에서의 삭제 인증 결과는 포함되어 있지 않습니다.
+주소창과 로봇암 체험 화면이 함께 보이는 초기 배포 캡처입니다. 보관함 저장과 Pod 교체 후 불러오기는 위의 PVC 시험 화면에서 확인할 수 있습니다. Secret 인증의 실패·성공 및 키 교체는 로컬 API 테스트를 통과했습니다. 이번 캡처에는 실제 Route의 삭제 인증 결과는 포함되어 있지 않습니다.
 
 <details>
 <summary>전체 재배포 전 리소스·Topology·Route·oc get all 기록</summary>
@@ -199,7 +234,7 @@ oc get route arm-lab-202355707
 
 </details>
 
-### 추가 Object 확인 방법
+### 추가 Object 재확인 방법
 
 **ConfigMap:** `web/config.js`의 `speedDegreesPerSecond`를 45에서 20으로 바꾸고 생성기와 정적 검사 후 적용합니다. 같은 초기 자세에서 같은 프리셋으로 이동하는 시간을 비교합니다. 확인 후 값을 45로 복원하고 다시 생성, 적용합니다. 짧은 이동에는 최소 애니메이션 시간이 있으므로 ‘옮기기’처럼 큰 각도 변화를 사용합니다.
 
@@ -214,6 +249,12 @@ oc get pods,pvc -l app=arm-lab-202355707
 ```
 
 새 Pod가 `2/2 Running`이 되면 브라우저에서 보관함을 새로고침합니다. 같은 자세가 남아 있고 불러오기가 동작하는지 확인합니다. 전체 리소스 삭제 시험과 달리 PVC를 삭제하지 않습니다.
+
+**Probe:** 다음 명령의 컨테이너별 Startup·Readiness·Liveness 설정, Ready 상태와 Events를 확인합니다. `2/2`는 두 컨테이너가 준비됐다는 의미이며 장애 발생 시 재시작 동작까지 시험했다는 의미는 아닙니다.
+
+```bash
+oc describe pods -l app=arm-lab-202355707
+```
 
 전체 삭제·재배포, PVC 유지 시험, 초기 배포의 리소스 목록·Topology·Route 및 웹사이트 화면을 `images/`에 저장했습니다. 캡처별 촬영 단계는 [이미지 목록](images/README.md)에 정리했습니다.
 
