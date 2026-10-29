@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/part-of: robot-arm-twin
 data:
   config.js: |
-    // ConfigMap으로 제공되는 교육용 모델 설정. 실제 로봇의 사양이 아닙니다.
+    // ConfigMap으로 제공되는 교육용 모델 설정.
     window.ARM_LAB_CONFIG = Object.freeze({
       studentId: '202355707',
       nickname: '아리',

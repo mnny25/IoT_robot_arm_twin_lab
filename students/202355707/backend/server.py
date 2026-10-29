@@ -1,4 +1,4 @@
-"""자세 보관 API. 표준 라이브러리와 SQLite만 사용합니다."""
+"""자세 보관 API. 표준 라이브러리와 SQLite만 사용함"""
 import argparse
 from contextlib import contextmanager
 import hmac
