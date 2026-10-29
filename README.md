@@ -34,4 +34,4 @@ Pod 2/2 Running, PVC Bound와 실제 Route 화면을 확인합니다. 기본 Sto
 
 ## 최종 검증 기록
 
-2026-10-28 OpenShift에서 Pod 교체 후 저장한 자세의 유지와 불러오기를 확인했습니다. 이어서 리소스 8개를 전체 삭제하고 `k8s/`의 YAML만으로 재생성한 뒤 Pod 2/2 Running, Deployment 1/1, PVC Bound와 Route 설정을 확인했습니다. [과제 README](students/202355707/README.md)에 시험 순서와 캡처를 정리했습니다. 브라우저 캡처는 전체 삭제 전의 접속 및 PVC 유지 시험 화면입니다.
+OpenShift에서 Pod 교체 후 저장한 자세의 유지와 불러오기를 확인했습니다. 이어서 리소스 8개를 전체 삭제하고 `k8s/`의 YAML만으로 재생성한 뒤 Pod 2/2 Running, Deployment 1/1, PVC Bound와 Route 설정을 확인했습니다. [과제 README](students/202355707/README.md)에 시험 순서와 캡처를 정리했습니다. 브라우저 캡처는 전체 삭제 전의 접속 및 PVC 유지 시험 화면입니다.
